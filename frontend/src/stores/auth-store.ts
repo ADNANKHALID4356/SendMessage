@@ -77,37 +77,13 @@ export const useAuthStore = create<AuthState>()(
       },
       
       initialize: async () => {
-        // TEMPORARY: Bypass authentication for testing
-        const defaultUser: AuthUser = {
-          id: 'temp-admin',
-          email: 'admin@messagesender.com',
-          firstName: 'System',
-          lastName: 'Admin',
-          isAdmin: true,
-          workspaces: [{
-            workspaceId: 'default-workspace',
-            workspaceName: 'Default Workspace',
-            permissionLevel: 'OWNER'
-          }]
-        };
-        
-        set({
-          user: defaultUser,
-          isAuthenticated: true,
-          isInitialized: true,
-          currentWorkspaceId: 'default-workspace',
-        });
-        return;
-        
-        // Original code commented out
-        /*
         const hasToken = authService.isAuthenticated();
-        
+
         if (!hasToken) {
           set({ isInitialized: true, isAuthenticated: false, user: null });
           return;
         }
-        
+
         try {
           // Use AbortController to timeout after 5s so the app doesn't hang
           const controller = new AbortController();
@@ -115,12 +91,12 @@ export const useAuthStore = create<AuthState>()(
           const user = await authService.getProfile(controller.signal);
           clearTimeout(timeoutId);
           const currentWorkspaceId = get().currentWorkspaceId;
-          
+
           // Ensure current workspace is still valid for this user
           const validWorkspace = user.workspaces?.find(
             (w) => w.workspaceId === currentWorkspaceId
           );
-          
+
           set({
             user,
             isAuthenticated: true,
@@ -132,7 +108,6 @@ export const useAuthStore = create<AuthState>()(
           tokenManager.clearTokens();
           set({ ...initialState, isInitialized: true });
         }
-        */
       },
       
       logout: async () => {

@@ -19,17 +19,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    // TEMPORARY: Bypass authentication and set default admin user
-    const request = context.switchToHttp().getRequest();
-    request.user = {
-      userId: 'temp-admin',
-      email: 'admin@messagesender.com',
-      isAdmin: true,
-      sessionId: 'temp-session'
-    };
-    return true;
-
-    // Original code commented out
-    // return super.canActivate(context);
+    return super.canActivate(context);
   }
 }
