@@ -49,7 +49,7 @@ docker compose -f "${APP_DIR}/docker-compose.yml" -f "${APP_DIR}/docker-compose.
 
 echo "[6/6] Health checks..."
 sleep 8
-curl -fsS http://127.0.0.1:4000/api/v1/health || true
+curl -fsS http://127.0.0.1:4010/api/v1/health || true
 curl -fsS http://127.0.0.1:3000 || true
 
 echo

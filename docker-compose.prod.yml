@@ -85,7 +85,7 @@ services:
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: production
     ports:
-      - "4000:4000"
+      - "4010:4000"
     networks:
       - messagesender_network
     healthcheck:
