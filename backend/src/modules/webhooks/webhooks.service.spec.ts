@@ -112,15 +112,15 @@ describe('WebhooksService', () => {
     });
 
     it('should throw UnauthorizedException for invalid mode', () => {
-      expect(() =>
-        service.verifyWebhook('invalid', VERIFY_TOKEN, 'challenge'),
-      ).toThrow(UnauthorizedException);
+      expect(() => service.verifyWebhook('invalid', VERIFY_TOKEN, 'challenge')).toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException for invalid token', () => {
-      expect(() =>
-        service.verifyWebhook('subscribe', 'wrong_token', 'challenge'),
-      ).toThrow(UnauthorizedException);
+      expect(() => service.verifyWebhook('subscribe', 'wrong_token', 'challenge')).toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -130,10 +130,7 @@ describe('WebhooksService', () => {
   describe('verifySignature', () => {
     it('should return true for valid HMAC-SHA256 signature', () => {
       const payload = '{"object":"page","entry":[]}';
-      const expectedHash = crypto
-        .createHmac('sha256', APP_SECRET)
-        .update(payload)
-        .digest('hex');
+      const expectedHash = crypto.createHmac('sha256', APP_SECRET).update(payload).digest('hex');
       const signature = `sha256=${expectedHash}`;
 
       expect(service.verifySignature(signature, payload)).toBe(true);
@@ -142,10 +139,7 @@ describe('WebhooksService', () => {
     it('should return false for invalid signature with matching length', () => {
       // Generate a valid-length but wrong hash
       const payload = 'test_payload';
-      const correctHash = crypto
-        .createHmac('sha256', APP_SECRET)
-        .update(payload)
-        .digest('hex');
+      const correctHash = crypto.createHmac('sha256', APP_SECRET).update(payload).digest('hex');
       // Flip the last character to create a wrong but same-length hash
       const wrongHash = correctHash.slice(0, -1) + (correctHash.slice(-1) === '0' ? '1' : '0');
 
@@ -170,10 +164,7 @@ describe('WebhooksService', () => {
     it('should use timing-safe comparison (tested via valid/invalid)', () => {
       // A valid signature passes, an almost-valid one fails
       const payload = 'test_payload';
-      const correctHash = crypto
-        .createHmac('sha256', APP_SECRET)
-        .update(payload)
-        .digest('hex');
+      const correctHash = crypto.createHmac('sha256', APP_SECRET).update(payload).digest('hex');
 
       expect(service.verifySignature(`sha256=${correctHash}`, payload)).toBe(true);
 
@@ -330,10 +321,13 @@ describe('WebhooksService', () => {
         ],
       });
 
-      expect(mockContacts.create).toHaveBeenCalledWith('ws-1', expect.objectContaining({
-        pageId: 'p-1',
-        psid: 'new-user',
-      }));
+      expect(mockContacts.create).toHaveBeenCalledWith(
+        'ws-1',
+        expect.objectContaining({
+          pageId: 'p-1',
+          psid: 'new-user',
+        }),
+      );
       expect(mockConversations.create).toHaveBeenCalled();
     });
 

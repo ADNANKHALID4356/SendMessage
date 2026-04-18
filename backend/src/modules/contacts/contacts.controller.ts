@@ -12,7 +12,12 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ContactsService } from './contacts.service';
-import { CustomFieldsService, CreateCustomFieldDto, UpdateCustomFieldDto, SetContactCustomFieldsDto } from './custom-fields.service';
+import {
+  CustomFieldsService,
+  CreateCustomFieldDto,
+  UpdateCustomFieldDto,
+  SetContactCustomFieldsDto,
+} from './custom-fields.service';
 import { ImportExportService, FieldMapping } from './import-export.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -44,19 +49,13 @@ export class ContactsController {
 
   @Post()
   @Roles('MANAGER')
-  async create(
-    @WorkspaceId() workspaceId: string,
-    @Body() dto: CreateContactDto,
-  ) {
+  async create(@WorkspaceId() workspaceId: string, @Body() dto: CreateContactDto) {
     return this.contactsService.create(workspaceId, dto);
   }
 
   @Get()
   @Roles('VIEW_ONLY')
-  async findAll(
-    @WorkspaceId() workspaceId: string,
-    @Query() query: ContactListQueryDto,
-  ) {
+  async findAll(@WorkspaceId() workspaceId: string, @Query() query: ContactListQueryDto) {
     return this.contactsService.findAll(workspaceId, query);
   }
 
@@ -68,10 +67,7 @@ export class ContactsController {
 
   @Get(':id')
   @Roles('VIEW_ONLY')
-  async findById(
-    @WorkspaceId() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async findById(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     return this.contactsService.findById(workspaceId, id);
   }
 
@@ -88,10 +84,7 @@ export class ContactsController {
   @Delete(':id')
   @Roles('MANAGER')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(
-    @WorkspaceId() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async delete(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     await this.contactsService.delete(workspaceId, id);
   }
 
@@ -117,10 +110,7 @@ export class ContactsController {
 
   @Post('bulk')
   @Roles('MANAGER')
-  async bulkUpdate(
-    @WorkspaceId() workspaceId: string,
-    @Body() dto: BulkUpdateContactsDto,
-  ) {
+  async bulkUpdate(@WorkspaceId() workspaceId: string, @Body() dto: BulkUpdateContactsDto) {
     return this.contactsService.bulkUpdate(workspaceId, dto);
   }
 
@@ -136,10 +126,7 @@ export class ContactsController {
 
   @Post('tags')
   @Roles('MANAGER')
-  async createTag(
-    @WorkspaceId() workspaceId: string,
-    @Body() dto: CreateTagDto,
-  ) {
+  async createTag(@WorkspaceId() workspaceId: string, @Body() dto: CreateTagDto) {
     return this.contactsService.createTag(workspaceId, dto);
   }
 
@@ -156,10 +143,7 @@ export class ContactsController {
   @Delete('tags/:tagId')
   @Roles('ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteTag(
-    @WorkspaceId() workspaceId: string,
-    @Param('tagId') tagId: string,
-  ) {
+  async deleteTag(@WorkspaceId() workspaceId: string, @Param('tagId') tagId: string) {
     await this.contactsService.deleteTag(workspaceId, tagId);
   }
 
@@ -175,10 +159,7 @@ export class ContactsController {
 
   @Post('custom-fields/definitions')
   @Roles('MANAGER')
-  async createCustomField(
-    @WorkspaceId() workspaceId: string,
-    @Body() dto: CreateCustomFieldDto,
-  ) {
+  async createCustomField(@WorkspaceId() workspaceId: string, @Body() dto: CreateCustomFieldDto) {
     return this.customFieldsService.createField(workspaceId, dto);
   }
 
@@ -195,10 +176,7 @@ export class ContactsController {
   @Delete('custom-fields/definitions/:fieldId')
   @Roles('MANAGER')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteCustomField(
-    @WorkspaceId() workspaceId: string,
-    @Param('fieldId') fieldId: string,
-  ) {
+  async deleteCustomField(@WorkspaceId() workspaceId: string, @Param('fieldId') fieldId: string) {
     return this.customFieldsService.deleteField(workspaceId, fieldId);
   }
 
@@ -213,10 +191,7 @@ export class ContactsController {
 
   @Get(':id/custom-fields')
   @Roles('VIEW_ONLY')
-  async getContactCustomFields(
-    @WorkspaceId() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async getContactCustomFields(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     return this.customFieldsService.getContactCustomFields(workspaceId, id);
   }
 
@@ -257,7 +232,13 @@ export class ContactsController {
   @Roles('VIEW_ONLY')
   async exportContacts(
     @WorkspaceId() workspaceId: string,
-    @Body() body: { pageId?: string; tagIds?: string[]; engagementLevel?: string; includeCustomFields?: boolean },
+    @Body()
+    body: {
+      pageId?: string;
+      tagIds?: string[];
+      engagementLevel?: string;
+      includeCustomFields?: boolean;
+    },
   ) {
     const csv = await this.importExportService.exportContacts(workspaceId, body);
     return { csv, filename: `contacts_export_${new Date().toISOString().slice(0, 10)}.csv` };

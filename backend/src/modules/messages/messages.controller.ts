@@ -19,7 +19,12 @@ import { RecurringNotificationService } from './recurring-notification.service';
 import { ComplianceService } from './compliance.service';
 import { SponsoredMessageService } from './sponsored-message.service';
 import { TemplatesService } from './templates.service';
-import { CreateTemplateDto, UpdateTemplateDto, CreateCannedResponseDto, UpdateCannedResponseDto } from './dto/template.dto';
+import {
+  CreateTemplateDto,
+  UpdateTemplateDto,
+  CreateCannedResponseDto,
+  UpdateCannedResponseDto,
+} from './dto/template.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -66,19 +71,13 @@ export class MessagesController {
 
   @Get()
   @Roles('VIEW_ONLY')
-  async getMessages(
-    @WorkspaceId() workspaceId: string,
-    @Query() query: MessageListQueryDto,
-  ) {
+  async getMessages(@WorkspaceId() workspaceId: string, @Query() query: MessageListQueryDto) {
     return this.messagesService.getMessages(workspaceId, query);
   }
 
   @Get('stats')
   @Roles('VIEW_ONLY')
-  async getStats(
-    @WorkspaceId() workspaceId: string,
-    @Query('days') days?: string,
-  ) {
+  async getStats(@WorkspaceId() workspaceId: string, @Query('days') days?: string) {
     return this.messagesService.getStats(workspaceId, days ? parseInt(days) : 30);
   }
 
@@ -94,10 +93,7 @@ export class MessagesController {
 
   @Get('window-status/:contactId/:pageId')
   @Roles('VIEW_ONLY')
-  async getWindowStatus(
-    @Param('contactId') contactId: string,
-    @Param('pageId') pageId: string,
-  ) {
+  async getWindowStatus(@Param('contactId') contactId: string, @Param('pageId') pageId: string) {
     return this.sendApiService.getWindowStatus(contactId, pageId);
   }
 
@@ -113,28 +109,19 @@ export class MessagesController {
 
   @Get('templates/all')
   @Roles('VIEW_ONLY')
-  async getTemplates(
-    @WorkspaceId() workspaceId: string,
-    @Query('category') category?: string,
-  ) {
+  async getTemplates(@WorkspaceId() workspaceId: string, @Query('category') category?: string) {
     return this.templatesService.getTemplates(workspaceId, category);
   }
 
   @Get('templates/:templateId')
   @Roles('VIEW_ONLY')
-  async getTemplate(
-    @WorkspaceId() workspaceId: string,
-    @Param('templateId') templateId: string,
-  ) {
+  async getTemplate(@WorkspaceId() workspaceId: string, @Param('templateId') templateId: string) {
     return this.templatesService.getTemplate(workspaceId, templateId);
   }
 
   @Post('templates')
   @Roles('OPERATOR')
-  async createTemplate(
-    @WorkspaceId() workspaceId: string,
-    @Body() dto: CreateTemplateDto,
-  ) {
+  async createTemplate(@WorkspaceId() workspaceId: string, @Body() dto: CreateTemplateDto) {
     return this.templatesService.createTemplate(workspaceId, dto);
   }
 
@@ -238,7 +225,8 @@ export class MessagesController {
   @Roles('OPERATOR')
   async useOtnToken(
     @WorkspaceId() workspaceId: string,
-    @Body() dto: {
+    @Body()
+    dto: {
       otnTokenId: string;
       contactId: string;
       pageId: string;
@@ -259,10 +247,7 @@ export class MessagesController {
    */
   @Get('otn/tokens/:contactId/:pageId')
   @Roles('VIEW_ONLY')
-  async getOtnTokens(
-    @Param('contactId') contactId: string,
-    @Param('pageId') pageId: string,
-  ) {
+  async getOtnTokens(@Param('contactId') contactId: string, @Param('pageId') pageId: string) {
     return this.otnService.getAvailableTokens(contactId, pageId);
   }
 
@@ -271,10 +256,7 @@ export class MessagesController {
    */
   @Get('otn/count/:contactId/:pageId')
   @Roles('VIEW_ONLY')
-  async getOtnTokenCount(
-    @Param('contactId') contactId: string,
-    @Param('pageId') pageId: string,
-  ) {
+  async getOtnTokenCount(@Param('contactId') contactId: string, @Param('pageId') pageId: string) {
     const count = await this.otnService.getTokenCount(contactId, pageId);
     return { count };
   }
@@ -290,7 +272,8 @@ export class MessagesController {
   @Roles('OPERATOR')
   async requestRecurringSubscription(
     @WorkspaceId() workspaceId: string,
-    @Body() dto: {
+    @Body()
+    dto: {
       contactId: string;
       pageId: string;
       title: string;
@@ -314,7 +297,8 @@ export class MessagesController {
   @Roles('OPERATOR')
   async sendRecurringMessage(
     @WorkspaceId() workspaceId: string,
-    @Body() dto: {
+    @Body()
+    dto: {
       subscriptionId: string;
       contactId: string;
       pageId: string;
@@ -362,7 +346,8 @@ export class MessagesController {
   @Roles('VIEW_ONLY')
   async checkCompliance(
     @WorkspaceId() workspaceId: string,
-    @Body() dto: {
+    @Body()
+    dto: {
       contactId: string;
       pageId: string;
       bypassMethod?: string;
@@ -403,7 +388,8 @@ export class MessagesController {
   @Roles('MANAGER')
   async createSponsoredCampaign(
     @WorkspaceId() workspaceId: string,
-    @Body() dto: {
+    @Body()
+    dto: {
       pageId: string;
       messageText: string;
       targetContactIds?: string[];
@@ -467,10 +453,7 @@ export class MessagesController {
 
   @Get(':id')
   @Roles('VIEW_ONLY')
-  async findById(
-    @WorkspaceId() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async findById(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     return this.messagesService.findById(workspaceId, id);
   }
 }

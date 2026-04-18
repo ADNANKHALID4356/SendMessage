@@ -41,10 +41,7 @@ export class FacebookController {
   @Roles('MANAGER')
   @ApiOperation({ summary: 'Initiate Facebook OAuth flow' })
   @ApiResponse({ status: 200, description: 'Returns authorization URL' })
-  async initiateOAuth(
-    @Body() dto: InitiateOAuthDto,
-    @CurrentUser() user: { userId: string }
-  ) {
+  async initiateOAuth(@Body() dto: InitiateOAuthDto, @CurrentUser() user: { userId: string }) {
     const authUrl = await this.facebookService.initiateOAuth(dto, user.userId);
     return { authUrl };
   }
@@ -60,7 +57,7 @@ export class FacebookController {
     @Query('state') state: string,
     @Query('error') error: string,
     @Query('error_description') errorDescription: string,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     // Get frontend URL (handle comma-separated list - use first URL)
     const frontendUrlRaw = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -92,9 +89,7 @@ export class FacebookController {
   @ApiOperation({ summary: 'Get Facebook connection status for workspace' })
   @ApiParam({ name: 'workspaceId', description: 'Workspace UUID' })
   @ApiResponse({ status: 200, description: 'Connection status' })
-  async getConnectionStatus(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string
-  ) {
+  async getConnectionStatus(@Param('workspaceId', ParseUUIDPipe) workspaceId: string) {
     return this.facebookService.getConnectionStatus(workspaceId);
   }
 
@@ -105,9 +100,7 @@ export class FacebookController {
   @ApiOperation({ summary: 'Get available Facebook pages' })
   @ApiParam({ name: 'accountId', description: 'Facebook Account UUID' })
   @ApiResponse({ status: 200, description: 'List of available pages' })
-  async getAvailablePages(
-    @Param('accountId', ParseUUIDPipe) accountId: string
-  ) {
+  async getAvailablePages(@Param('accountId', ParseUUIDPipe) accountId: string) {
     return this.facebookService.getAvailablePages(accountId);
   }
 
@@ -120,7 +113,7 @@ export class FacebookController {
   @ApiResponse({ status: 201, description: 'Page connected successfully' })
   async connectPage(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
-    @Body() dto: ConnectPageDto
+    @Body() dto: ConnectPageDto,
   ) {
     return this.facebookService.connectPage(workspaceId, dto);
   }
@@ -136,7 +129,7 @@ export class FacebookController {
   @ApiResponse({ status: 204, description: 'Page disconnected' })
   async disconnectPage(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
-    @Param('pageId', ParseUUIDPipe) pageId: string
+    @Param('pageId', ParseUUIDPipe) pageId: string,
   ) {
     await this.facebookService.disconnectPage(workspaceId, pageId);
   }
@@ -149,9 +142,7 @@ export class FacebookController {
   @ApiOperation({ summary: 'Disconnect Facebook account from workspace' })
   @ApiParam({ name: 'workspaceId', description: 'Workspace UUID' })
   @ApiResponse({ status: 204, description: 'Account disconnected' })
-  async disconnectAccount(
-    @Param('workspaceId', ParseUUIDPipe) workspaceId: string
-  ) {
+  async disconnectAccount(@Param('workspaceId', ParseUUIDPipe) workspaceId: string) {
     await this.facebookService.disconnectAccount(workspaceId);
   }
 
@@ -173,10 +164,7 @@ export class FacebookController {
   @Roles('MANAGER')
   @ApiOperation({ summary: '[DEV ONLY] Mock Facebook connection for testing' })
   @ApiResponse({ status: 200, description: 'Mock connection created' })
-  async mockConnect(
-    @Body() dto: { workspaceId: string },
-    @CurrentUser() user: { userId: string }
-  ) {
+  async mockConnect(@Body() dto: { workspaceId: string }, @CurrentUser() user: { userId: string }) {
     const mockMode = process.env.FACEBOOK_MOCK_MODE === 'true';
     if (!mockMode) {
       throw new BadRequestException('Mock mode is not enabled');

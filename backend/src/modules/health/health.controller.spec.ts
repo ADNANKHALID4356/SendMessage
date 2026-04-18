@@ -1,9 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  HealthCheckService,
-  MemoryHealthIndicator,
-  HealthCheckResult,
-} from '@nestjs/terminus';
+import { HealthCheckService, MemoryHealthIndicator, HealthCheckResult } from '@nestjs/terminus';
 import { HealthController } from './health.controller';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
@@ -76,19 +72,21 @@ describe('HealthController', () => {
       };
 
       // Mock HealthCheckService.check to execute the indicator callbacks
-      mockHealthCheckService.check.mockImplementation(async (indicators: (() => Promise<any>)[]) => {
-        const results: Record<string, any> = {};
-        for (const indicator of indicators) {
-          const result = await indicator();
-          Object.assign(results, result);
-        }
-        return {
-          status: 'ok',
-          info: results,
-          error: {},
-          details: results,
-        };
-      });
+      mockHealthCheckService.check.mockImplementation(
+        async (indicators: (() => Promise<any>)[]) => {
+          const results: Record<string, any> = {};
+          for (const indicator of indicators) {
+            const result = await indicator();
+            Object.assign(results, result);
+          }
+          return {
+            status: 'ok',
+            info: results,
+            error: {},
+            details: results,
+          };
+        },
+      );
 
       mockPrismaService.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
       mockRedisService.getClient().ping.mockResolvedValue('PONG');
@@ -105,19 +103,21 @@ describe('HealthController', () => {
     });
 
     it('should report database down when query fails', async () => {
-      mockHealthCheckService.check.mockImplementation(async (indicators: (() => Promise<any>)[]) => {
-        const results: Record<string, any> = {};
-        for (const indicator of indicators) {
-          const result = await indicator();
-          Object.assign(results, result);
-        }
-        return {
-          status: 'error',
-          info: {},
-          error: results,
-          details: results,
-        };
-      });
+      mockHealthCheckService.check.mockImplementation(
+        async (indicators: (() => Promise<any>)[]) => {
+          const results: Record<string, any> = {};
+          for (const indicator of indicators) {
+            const result = await indicator();
+            Object.assign(results, result);
+          }
+          return {
+            status: 'error',
+            info: {},
+            error: results,
+            details: results,
+          };
+        },
+      );
 
       mockPrismaService.$queryRaw.mockRejectedValue(new Error('Connection refused'));
       mockRedisService.getClient().ping.mockResolvedValue('PONG');
@@ -132,19 +132,21 @@ describe('HealthController', () => {
     });
 
     it('should report redis down when ping fails', async () => {
-      mockHealthCheckService.check.mockImplementation(async (indicators: (() => Promise<any>)[]) => {
-        const results: Record<string, any> = {};
-        for (const indicator of indicators) {
-          const result = await indicator();
-          Object.assign(results, result);
-        }
-        return {
-          status: 'error',
-          info: {},
-          error: results,
-          details: results,
-        };
-      });
+      mockHealthCheckService.check.mockImplementation(
+        async (indicators: (() => Promise<any>)[]) => {
+          const results: Record<string, any> = {};
+          for (const indicator of indicators) {
+            const result = await indicator();
+            Object.assign(results, result);
+          }
+          return {
+            status: 'error',
+            info: {},
+            error: results,
+            details: results,
+          };
+        },
+      );
 
       mockPrismaService.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
       mockRedisService.getClient().ping.mockRejectedValue(new Error('Redis unreachable'));
@@ -159,14 +161,16 @@ describe('HealthController', () => {
     });
 
     it('should pass 512 MB limit to memory heap check', async () => {
-      mockHealthCheckService.check.mockImplementation(async (indicators: (() => Promise<any>)[]) => {
-        const results: Record<string, any> = {};
-        for (const indicator of indicators) {
-          const result = await indicator();
-          Object.assign(results, result);
-        }
-        return { status: 'ok', info: results, error: {}, details: results };
-      });
+      mockHealthCheckService.check.mockImplementation(
+        async (indicators: (() => Promise<any>)[]) => {
+          const results: Record<string, any> = {};
+          for (const indicator of indicators) {
+            const result = await indicator();
+            Object.assign(results, result);
+          }
+          return { status: 'ok', info: results, error: {}, details: results };
+        },
+      );
 
       mockPrismaService.$queryRaw.mockResolvedValue([{ '?column?': 1 }]);
       mockRedisService.getClient().ping.mockResolvedValue('PONG');

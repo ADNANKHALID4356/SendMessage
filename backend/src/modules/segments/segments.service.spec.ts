@@ -37,7 +37,15 @@ describe('SegmentsService', () => {
     name: 'Hot Leads',
     description: 'Contacts with high engagement',
     segmentType: 'DYNAMIC',
-    filters: { logic: 'AND', groups: [{ logic: 'AND', conditions: [{ field: 'engagementLevel', operator: 'EQUALS', value: 'HOT' }] }] },
+    filters: {
+      logic: 'AND',
+      groups: [
+        {
+          logic: 'AND',
+          conditions: [{ field: 'engagementLevel', operator: 'EQUALS', value: 'HOT' }],
+        },
+      ],
+    },
     contactCount: 50,
     lastCalculatedAt: new Date(),
     createdAt: new Date(),
@@ -46,10 +54,7 @@ describe('SegmentsService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SegmentsService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [SegmentsService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<SegmentsService>(SegmentsService);
@@ -128,9 +133,7 @@ describe('SegmentsService', () => {
     it('should throw NotFoundException when segment not found', async () => {
       mockPrisma.segment.findFirst.mockResolvedValue(null);
 
-      await expect(service.findById('ws-1', 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findById('ws-1', 'nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -208,9 +211,9 @@ describe('SegmentsService', () => {
     it('should throw NotFoundException for missing segment', async () => {
       mockPrisma.segment.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.update('ws-1', 'nonexistent', { name: 'x' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update('ws-1', 'nonexistent', { name: 'x' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -234,17 +237,13 @@ describe('SegmentsService', () => {
       mockPrisma.segment.findFirst.mockResolvedValue(mockSegment);
       mockPrisma.campaign.count.mockResolvedValue(3);
 
-      await expect(service.delete('ws-1', 'seg-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.delete('ws-1', 'seg-1')).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException for missing segment', async () => {
       mockPrisma.segment.findFirst.mockResolvedValue(null);
 
-      await expect(service.delete('ws-1', 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.delete('ws-1', 'nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -270,9 +269,9 @@ describe('SegmentsService', () => {
     it('should throw BadRequestException for dynamic segment', async () => {
       mockPrisma.segment.findFirst.mockResolvedValue(mockSegment); // DYNAMIC
 
-      await expect(
-        service.addContacts('ws-1', 'seg-1', ['c-1']),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.addContacts('ws-1', 'seg-1', ['c-1'])).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should skip already existing contacts', async () => {
@@ -348,9 +347,9 @@ describe('SegmentsService', () => {
         segmentType: 'STATIC',
       });
 
-      await expect(
-        service.recalculateSegment('ws-1', 'seg-1'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.recalculateSegment('ws-1', 'seg-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

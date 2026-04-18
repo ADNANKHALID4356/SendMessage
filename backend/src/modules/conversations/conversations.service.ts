@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   ConversationListQueryDto,
@@ -151,11 +146,7 @@ export class ConversationsService {
   /**
    * Find conversation by contact and page (for webhooks)
    */
-  async findByContactAndPage(
-    workspaceId: string,
-    contactId: string,
-    pageId: string,
-  ) {
+  async findByContactAndPage(workspaceId: string, contactId: string, pageId: string) {
     return this.prisma.conversation.findFirst({
       where: {
         workspaceId,
@@ -385,9 +376,7 @@ export class ConversationsService {
     ]);
 
     // Average response time (last 7 days)
-    const avgResponseTime = await this.prisma.$queryRaw<
-      [{ avg_minutes: number }]
-    >`
+    const avgResponseTime = await this.prisma.$queryRaw<[{ avg_minutes: number }]>`
       SELECT AVG(
         EXTRACT(EPOCH FROM (m_out.created_at - m_in.created_at)) / 60
       )::int as avg_minutes

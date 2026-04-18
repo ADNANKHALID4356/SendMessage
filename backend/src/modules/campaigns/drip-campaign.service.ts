@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { MessageQueueService, MessageJobData } from '../messages/message-queue.service';
@@ -184,9 +179,7 @@ export class DripCampaignService {
       type: 'CAMPAIGN',
     };
 
-    await this.messageQueue.addMessage(
-      jobData,
-    );
+    await this.messageQueue.addMessage(jobData);
 
     // Update progress with next step schedule
     const progressKey = `${this.PROGRESS_PREFIX}${campaignId}:${contactId}`;
@@ -296,10 +289,8 @@ export class DripCampaignService {
       take: 10,
     });
 
-    const hasReply = recentMessages.some(m => m.direction === 'INBOUND');
-    const hasClick = recentMessages.some(
-      m => m.status === 'READ' || (m.content as any)?.clicked,
-    );
+    const hasReply = recentMessages.some((m) => m.direction === 'INBOUND');
+    const hasClick = recentMessages.some((m) => m.status === 'READ' || (m.content as any)?.clicked);
 
     switch (condition) {
       case 'replied':
@@ -322,10 +313,7 @@ export class DripCampaignService {
   /**
    * Remove a contact from an active drip campaign
    */
-  async removeContactFromDrip(
-    campaignId: string,
-    contactId: string,
-  ): Promise<void> {
+  async removeContactFromDrip(campaignId: string, contactId: string): Promise<void> {
     const progressKey = `${this.PROGRESS_PREFIX}${campaignId}:${contactId}`;
     const progressJson = await this.redis.get(progressKey);
 
@@ -355,9 +343,7 @@ export class DripCampaignService {
   /**
    * Get all active contacts in a drip campaign with their progress
    */
-  async getCampaignDripProgress(
-    campaignId: string,
-  ): Promise<{
+  async getCampaignDripProgress(campaignId: string): Promise<{
     totalEnrolled: number;
     active: number;
     completed: number;
@@ -443,7 +429,7 @@ export class DripCampaignService {
           where: { workspaceId, isSubscribed: true },
           select: { id: true },
         });
-        return contacts.map(c => c.id);
+        return contacts.map((c) => c.id);
       }
       case 'SEGMENT': {
         if (!campaign.audienceSegmentId) return [];
@@ -451,14 +437,14 @@ export class DripCampaignService {
           where: { segmentId: campaign.audienceSegmentId },
           select: { contactId: true },
         });
-        return sc.map(s => s.contactId);
+        return sc.map((s) => s.contactId);
       }
       case 'PAGES': {
         const contacts = await this.prisma.contact.findMany({
           where: { workspaceId, pageId: { in: campaign.audiencePageIds }, isSubscribed: true },
           select: { id: true },
         });
-        return contacts.map(c => c.id);
+        return contacts.map((c) => c.id);
       }
       case 'MANUAL':
         return campaign.audienceContactIds || [];

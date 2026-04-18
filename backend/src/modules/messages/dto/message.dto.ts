@@ -11,8 +11,8 @@ import {
   IsArray,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import { 
-  MessageType as PrismaMessageType, 
+import {
+  MessageType as PrismaMessageType,
   MessageStatus as PrismaMessageStatus,
   MessageDirection as PrismaMessageDirection,
   BypassMethod,

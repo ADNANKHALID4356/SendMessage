@@ -78,8 +78,8 @@ export class SystemHealthService {
     // Determine overall status
     const serviceStatuses = [database.status, redis.status, facebookApi.status];
     let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-    if (serviceStatuses.some(s => s === 'down')) overallStatus = 'unhealthy';
-    else if (serviceStatuses.some(s => s === 'degraded')) overallStatus = 'degraded';
+    if (serviceStatuses.some((s) => s === 'down')) overallStatus = 'unhealthy';
+    else if (serviceStatuses.some((s) => s === 'degraded')) overallStatus = 'degraded';
 
     const mem = process.memoryUsage();
 
@@ -197,8 +197,14 @@ export class SystemHealthService {
       const [waiting, active, completed, failed, delayed] = await Promise.all([
         client.llen('bull:messages:wait').catch(() => 0),
         client.llen('bull:messages:active').catch(() => 0),
-        client.get('bull:messages:completed').then(v => parseInt(v || '0', 10)).catch(() => 0),
-        client.get('bull:messages:failed').then(v => parseInt(v || '0', 10)).catch(() => 0),
+        client
+          .get('bull:messages:completed')
+          .then((v) => parseInt(v || '0', 10))
+          .catch(() => 0),
+        client
+          .get('bull:messages:failed')
+          .then((v) => parseInt(v || '0', 10))
+          .catch(() => 0),
         client.zcard('bull:messages:delayed').catch(() => 0),
       ]);
 
@@ -327,7 +333,8 @@ export class SystemHealthService {
 
       // Stale sync detection — no sync in 24+ hours
       if (page.isActive && page.lastSyncedAt) {
-        const hoursSinceSync = (now.getTime() - new Date(page.lastSyncedAt).getTime()) / (1000 * 60 * 60);
+        const hoursSinceSync =
+          (now.getTime() - new Date(page.lastSyncedAt).getTime()) / (1000 * 60 * 60);
         if (hoursSinceSync > 24) {
           alerts.push({
             pageId: page.id,

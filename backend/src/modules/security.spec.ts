@@ -25,9 +25,7 @@ describe('White Hat — Input Validation', () => {
     it('should not pass XSS payloads through as-is', () => {
       for (const payload of xssPayloads) {
         // Simple check: payloads containing <script> should not appear unescaped in output
-        const escaped = payload
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;');
+        const escaped = payload.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         expect(escaped).not.toContain('<script>');
         expect(escaped).not.toContain('<img');
       }
@@ -38,9 +36,9 @@ describe('White Hat — Input Validation', () => {
     const sqlPayloads = [
       "'; DROP TABLE users; --",
       "1' OR '1'='1",
-      "1; DELETE FROM contacts WHERE 1=1;--",
+      '1; DELETE FROM contacts WHERE 1=1;--',
       "admin'--",
-      "UNION SELECT * FROM users--",
+      'UNION SELECT * FROM users--',
     ];
 
     it('should treat SQL payloads as plain strings (Prisma parameterizes)', () => {
@@ -64,18 +62,17 @@ describe('White Hat — Input Validation', () => {
 
       for (const token of invalidTokens) {
         const parts = token.split('.');
-        expect(parts.length === 3 && parts.every(p => p.length > 0)).toBe(
-          false,
-        );
+        expect(parts.length === 3 && parts.every((p) => p.length > 0)).toBe(false);
       }
     });
 
     it('should validate JWT has correct structure', () => {
       // A valid JWT has 3 base64 parts
-      const mockValidToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+      const mockValidToken =
+        'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
       const parts = mockValidToken.split('.');
       expect(parts).toHaveLength(3);
-      expect(parts.every(p => p.length > 0)).toBe(true);
+      expect(parts.every((p) => p.length > 0)).toBe(true);
     });
   });
 
@@ -103,11 +100,7 @@ describe('White Hat — Input Validation', () => {
 describe('Black Hat — Attack Surface', () => {
   describe('NoSQL / JSON injection attempt', () => {
     it('should not interpret JSON injection in string fields', () => {
-      const injectionPayloads = [
-        '{"$gt":""}',
-        '{"$ne":null}',
-        '{"$where":"sleep(5000)"}',
-      ];
+      const injectionPayloads = ['{"$gt":""}', '{"$ne":null}', '{"$where":"sleep(5000)"}'];
 
       for (const payload of injectionPayloads) {
         // These should be treated as literal strings by the ORM
@@ -192,12 +185,12 @@ describe('Grey Hat — Edge Cases & Boundary Testing', () => {
 
   describe('Unicode and special character handling', () => {
     const specialInputs = [
-      '你好世界',                   // Chinese
-      'مرحبا بالعالم',              // Arabic (RTL)
-      '🎉🚀💬👍',                   // Emoji
-      '\u0000\u0001\u0002',          // Null bytes
+      '你好世界', // Chinese
+      'مرحبا بالعالم', // Arabic (RTL)
+      '🎉🚀💬👍', // Emoji
+      '\u0000\u0001\u0002', // Null bytes
       'line1\r\nline2\rline3\nline4', // Mixed newlines
-      '\t\t\ttabs\t\t',             // Tabs
+      '\t\t\ttabs\t\t', // Tabs
     ];
 
     it('should handle unicode without crashing', () => {
@@ -210,7 +203,15 @@ describe('Grey Hat — Edge Cases & Boundary Testing', () => {
 
   describe('Boundary value testing', () => {
     it('should handle integer boundaries', () => {
-      const boundaries = [0, -1, 1, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, NaN, Infinity];
+      const boundaries = [
+        0,
+        -1,
+        1,
+        Number.MAX_SAFE_INTEGER,
+        Number.MIN_SAFE_INTEGER,
+        NaN,
+        Infinity,
+      ];
       for (const val of boundaries) {
         expect(typeof val).toBe('number');
       }
@@ -226,11 +227,11 @@ describe('Grey Hat — Edge Cases & Boundary Testing', () => {
 
     it('should handle date edge cases', () => {
       const edgeDates = [
-        new Date(0),                    // Unix epoch
-        new Date('2099-12-31'),         // Far future
-        new Date('1970-01-01'),         // Start of Unix time
-        new Date(8640000000000000),     // Max JS Date
-        new Date(-8640000000000000),    // Min JS Date
+        new Date(0), // Unix epoch
+        new Date('2099-12-31'), // Far future
+        new Date('1970-01-01'), // Start of Unix time
+        new Date(8640000000000000), // Max JS Date
+        new Date(-8640000000000000), // Min JS Date
       ];
 
       for (const d of edgeDates) {
@@ -258,9 +259,7 @@ describe('Grey Hat — Edge Cases & Boundary Testing', () => {
     });
 
     it('should handle parallel promise resolution', async () => {
-      const promises = Array.from({ length: 10 }, (_, i) =>
-        Promise.resolve(i),
-      );
+      const promises = Array.from({ length: 10 }, (_, i) => Promise.resolve(i));
       const results = await Promise.all(promises);
       expect(results).toHaveLength(10);
       expect(results).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);

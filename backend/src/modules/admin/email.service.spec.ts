@@ -10,7 +10,7 @@ jest.mock('nodemailer', () => ({
 }));
 
 // =============================================
-// Email Service - Unit Tests  
+// Email Service - Unit Tests
 // =============================================
 
 describe('EmailService', () => {
@@ -39,10 +39,7 @@ describe('EmailService', () => {
     });
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        EmailService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [EmailService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<EmailService>(EmailService);

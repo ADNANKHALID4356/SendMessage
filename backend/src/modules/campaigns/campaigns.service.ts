@@ -16,13 +16,7 @@ import {
   CampaignStatsResponse,
   CampaignListResponse,
 } from './dto';
-import {
-  CampaignStatus,
-  CampaignType,
-  AudienceType,
-  BypassMethod,
-  Prisma,
-} from '@prisma/client';
+import { CampaignStatus, CampaignType, AudienceType, BypassMethod, Prisma } from '@prisma/client';
 
 // ===========================================
 // Campaigns Service
@@ -110,10 +104,7 @@ export class CampaignsService {
   /**
    * List campaigns with filtering and pagination
    */
-  async findAll(
-    workspaceId: string,
-    query: CampaignListQueryDto,
-  ): Promise<CampaignListResponse> {
+  async findAll(workspaceId: string, query: CampaignListQueryDto): Promise<CampaignListResponse> {
     const { page = 1, limit = 20, status, type, search, sortBy, sortOrder } = query;
 
     const where: Prisma.CampaignWhereInput = { workspaceId };
@@ -144,7 +135,7 @@ export class CampaignsService {
     ]);
 
     return {
-      data: campaigns.map(c => this.formatCampaignResponse(c)),
+      data: campaigns.map((c) => this.formatCampaignResponse(c)),
       pagination: {
         page,
         limit,
@@ -179,14 +170,19 @@ export class CampaignsService {
 
     // Recalculate recipients if audience changed
     let totalRecipients = campaign.totalRecipients;
-    if (dto.audienceType || dto.audienceSegmentId || dto.audiencePageIds || dto.audienceContactIds) {
+    if (
+      dto.audienceType ||
+      dto.audienceSegmentId ||
+      dto.audiencePageIds ||
+      dto.audienceContactIds
+    ) {
       const audienceData = {
         audienceType: dto.audienceType || campaign.audienceType,
         audienceSegmentId: dto.audienceSegmentId,
         audiencePageIds: dto.audiencePageIds,
         audienceContactIds: dto.audienceContactIds,
       } as CreateCampaignDto;
-      
+
       await this.validateAudience(workspaceId, audienceData);
       totalRecipients = await this.calculateRecipientCount(workspaceId, audienceData);
     }
@@ -203,7 +199,9 @@ export class CampaignsService {
         ...(dto.audienceContactIds && { audienceContactIds: dto.audienceContactIds }),
         ...(dto.bypassMethod !== undefined && { bypassMethod: dto.bypassMethod }),
         ...(dto.messageTag !== undefined && { messageTag: dto.messageTag }),
-        ...(dto.scheduledAt !== undefined && { scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null }),
+        ...(dto.scheduledAt !== undefined && {
+          scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
+        }),
         ...(dto.timezone && { timezone: dto.timezone }),
         totalRecipients,
       },
@@ -227,9 +225,7 @@ export class CampaignsService {
     }
 
     if (!(['DRAFT', 'COMPLETED', 'CANCELLED'] as const).includes(campaign.status as any)) {
-      throw new BadRequestException(
-        'Only draft, completed, or cancelled campaigns can be deleted',
-      );
+      throw new BadRequestException('Only draft, completed, or cancelled campaigns can be deleted');
     }
 
     await this.prisma.campaign.delete({ where: { id: campaignId } });
@@ -515,7 +511,10 @@ export class CampaignsService {
   /**
    * Get campaign progress
    */
-  async getProgress(workspaceId: string, campaignId: string): Promise<{
+  async getProgress(
+    workspaceId: string,
+    campaignId: string,
+  ): Promise<{
     total: number;
     sent: number;
     pending: number;
@@ -552,7 +551,7 @@ export class CampaignsService {
     stat: 'sent' | 'delivered' | 'failed' | 'opened' | 'clicked' | 'replied',
   ): Promise<void> {
     const incrementField = `${stat}Count`;
-    
+
     await this.prisma.campaign.update({
       where: { id: campaignId },
       data: { [incrementField]: { increment: 1 } },
@@ -595,16 +594,25 @@ export class CampaignsService {
       }
     }
 
-    if (dto.audienceType === AudienceType.PAGES && (!dto.audiencePageIds || dto.audiencePageIds.length === 0)) {
+    if (
+      dto.audienceType === AudienceType.PAGES &&
+      (!dto.audiencePageIds || dto.audiencePageIds.length === 0)
+    ) {
       throw new BadRequestException('Page IDs are required for PAGES audience type');
     }
 
-    if (dto.audienceType === AudienceType.MANUAL && (!dto.audienceContactIds || dto.audienceContactIds.length === 0)) {
+    if (
+      dto.audienceType === AudienceType.MANUAL &&
+      (!dto.audienceContactIds || dto.audienceContactIds.length === 0)
+    ) {
       throw new BadRequestException('Contact IDs are required for MANUAL audience type');
     }
   }
 
-  private async calculateRecipientCount(workspaceId: string, dto: CreateCampaignDto): Promise<number> {
+  private async calculateRecipientCount(
+    workspaceId: string,
+    dto: CreateCampaignDto,
+  ): Promise<number> {
     switch (dto.audienceType) {
       case AudienceType.ALL:
         return this.prisma.contact.count({ where: { workspaceId, isSubscribed: true } });
@@ -640,7 +648,7 @@ export class CampaignsService {
           where: { workspaceId, isSubscribed: true },
           select: { id: true },
         });
-        return allContacts.map(c => c.id);
+        return allContacts.map((c) => c.id);
 
       case AudienceType.SEGMENT:
         if (!campaign.audienceSegmentId) return [];
@@ -648,7 +656,7 @@ export class CampaignsService {
           where: { segmentId: campaign.audienceSegmentId },
           select: { contactId: true },
         });
-        return segmentContacts.map(sc => sc.contactId);
+        return segmentContacts.map((sc) => sc.contactId);
 
       case AudienceType.PAGES:
         const pageContacts = await this.prisma.contact.findMany({
@@ -659,7 +667,7 @@ export class CampaignsService {
           },
           select: { id: true },
         });
-        return pageContacts.map(c => c.id);
+        return pageContacts.map((c) => c.id);
 
       case AudienceType.MANUAL:
         return campaign.audienceContactIds || [];

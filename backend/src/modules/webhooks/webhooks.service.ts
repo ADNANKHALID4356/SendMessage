@@ -2,11 +2,7 @@ import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { PrismaService } from '@/prisma/prisma.service';
-import {
-  WebhookPayloadDto,
-  WebhookEntry,
-  WebhookMessagingEvent,
-} from './dto/webhook.dto';
+import { WebhookPayloadDto, WebhookEntry, WebhookMessagingEvent } from './dto/webhook.dto';
 import { ContactsService } from '@/modules/contacts/contacts.service';
 import { ConversationsService } from '@/modules/conversations/conversations.service';
 import { MessagesService } from '@/modules/messages/messages.service';
@@ -39,7 +35,10 @@ export class WebhooksService {
     private readonly conversationsService: ConversationsService,
     private readonly messagesService: MessagesService,
   ) {
-    this.verifyToken = this.configService.get<string>('FACEBOOK_WEBHOOK_VERIFY_TOKEN', 'messagesender_webhook_verify');
+    this.verifyToken = this.configService.get<string>(
+      'FACEBOOK_WEBHOOK_VERIFY_TOKEN',
+      'messagesender_webhook_verify',
+    );
     this.appSecret = this.configService.get<string>('FACEBOOK_APP_SECRET', '');
     this.initBullMQ();
   }
@@ -144,10 +143,7 @@ export class WebhooksService {
     }
 
     const receivedHash = signatureParts[1];
-    const expectedHash = crypto
-      .createHmac('sha256', this.appSecret)
-      .update(payload)
-      .digest('hex');
+    const expectedHash = crypto.createHmac('sha256', this.appSecret).update(payload).digest('hex');
 
     // Use timing-safe comparison to prevent timing attacks
     try {
@@ -181,7 +177,9 @@ export class WebhooksService {
    * Process incoming webhook payload
    */
   async processWebhook(payload: WebhookPayloadDto): Promise<void> {
-    this.logger.log(`Processing webhook: object=${payload.object}, entries=${payload.entry.length}`);
+    this.logger.log(
+      `Processing webhook: object=${payload.object}, entries=${payload.entry.length}`,
+    );
 
     // Only process page events
     if (payload.object !== 'page') {
@@ -222,9 +220,13 @@ export class WebhooksService {
     if (entry.messaging && entry.messaging.length > 0) {
       for (const event of entry.messaging) {
         if (this.webhookQueue) {
-          await this.webhookQueue.add('messaging-event', { page, event }, {
-            jobId: `wh_${page.id}_${event.sender?.id}_${event.timestamp}`,
-          });
+          await this.webhookQueue.add(
+            'messaging-event',
+            { page, event },
+            {
+              jobId: `wh_${page.id}_${event.sender?.id}_${event.timestamp}`,
+            },
+          );
         } else {
           await this.processMessagingEvent(page, event);
         }
@@ -242,10 +244,7 @@ export class WebhooksService {
   /**
    * Process a messaging event
    */
-  private async processMessagingEvent(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async processMessagingEvent(page: any, event: WebhookMessagingEvent): Promise<void> {
     const senderId = event.sender.id;
     const timestamp = event.timestamp;
 
@@ -313,10 +312,7 @@ export class WebhooksService {
   /**
    * Process standby event (when another app is primary)
    */
-  private async processStandbyEvent(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async processStandbyEvent(page: any, event: WebhookMessagingEvent): Promise<void> {
     this.logger.debug(`Standby event received for page ${page.id}`);
     // In standby mode, we can only read messages, not respond
     // Useful for monitoring/analytics
@@ -329,22 +325,18 @@ export class WebhooksService {
   /**
    * Handle incoming message from user
    */
-  private async handleIncomingMessage(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handleIncomingMessage(page: any, event: WebhookMessagingEvent): Promise<void> {
     const senderId = event.sender.id;
     const message = event.message!;
     const timestamp = new Date(event.timestamp);
 
-    this.logger.log(`Incoming message from ${senderId}: ${message.text?.substring(0, 50) || '[attachment]'}`);
+    this.logger.log(
+      `Incoming message from ${senderId}: ${message.text?.substring(0, 50) || '[attachment]'}`,
+    );
 
     // 1. Get or create contact
-    let contact: { id: string; [key: string]: any } | null = await this.contactsService.findByPsidAndPage(
-      page.workspaceId,
-      senderId,
-      page.id,
-    );
+    let contact: { id: string; [key: string]: any } | null =
+      await this.contactsService.findByPsidAndPage(page.workspaceId, senderId, page.id);
 
     if (!contact) {
       // Auto-capture new contact
@@ -368,18 +360,11 @@ export class WebhooksService {
     }
 
     // 2. Update contact's 24-hour window timestamp
-    await this.contactsService.updateLastInteraction(
-      contact!.id,
-      timestamp,
-      'received',
-    );
+    await this.contactsService.updateLastInteraction(contact!.id, timestamp, 'received');
 
     // 3. Get or create conversation
-    let conversation: { id: string; status: ConversationStatus; [key: string]: any } | null = await this.conversationsService.findByContactAndPage(
-      page.workspaceId,
-      contact!.id,
-      page.id,
-    );
+    let conversation: { id: string; status: ConversationStatus; [key: string]: any } | null =
+      await this.conversationsService.findByContactAndPage(page.workspaceId, contact!.id, page.id);
 
     if (!conversation) {
       const newConversation = await this.conversationsService.create(page.workspaceId, {
@@ -391,35 +376,30 @@ export class WebhooksService {
     } else {
       // Reopen conversation if it was resolved
       if (conversation.status === ConversationStatus.RESOLVED) {
-        await this.conversationsService.update(
-          page.workspaceId,
-          conversation.id,
-          { status: ConversationStatus.OPEN },
-        );
+        await this.conversationsService.update(page.workspaceId, conversation.id, {
+          status: ConversationStatus.OPEN,
+        });
       }
     }
 
     // 4. Store the message
-    const storedMessage = await this.messagesService.processWebhookMessage(
-      page.workspaceId,
-      {
-        conversationId: conversation.id,
-        contactId: contact!.id,
-        pageId: page.id,
-        direction: 'INCOMING',
-        facebookMessageId: message.mid,
-        type: this.determineMessageType(message),
-        content: message.text || null,
-        attachments: message.attachments?.map((att) => ({
-          type: att.type,
-          url: att.payload?.url,
-          stickerId: att.payload?.sticker_id,
-        })),
-        quickReplyPayload: message.quick_reply?.payload,
-        replyToMessageId: message.reply_to?.mid,
-        sentAt: timestamp,
-      },
-    );
+    const storedMessage = await this.messagesService.processWebhookMessage(page.workspaceId, {
+      conversationId: conversation.id,
+      contactId: contact!.id,
+      pageId: page.id,
+      direction: 'INCOMING',
+      facebookMessageId: message.mid,
+      type: this.determineMessageType(message),
+      content: message.text || null,
+      attachments: message.attachments?.map((att) => ({
+        type: att.type,
+        url: att.payload?.url,
+        stickerId: att.payload?.sticker_id,
+      })),
+      quickReplyPayload: message.quick_reply?.payload,
+      replyToMessageId: message.reply_to?.mid,
+      sentAt: timestamp,
+    });
 
     this.logger.log(`Message stored: ${storedMessage.id}`);
 
@@ -456,10 +436,7 @@ export class WebhooksService {
   /**
    * Handle echo message (sent by page, including via our app)
    */
-  private async handleEchoMessage(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handleEchoMessage(page: any, event: WebhookMessagingEvent): Promise<void> {
     const message = event.message!;
     this.logger.debug(`Echo message received: ${message.mid}`);
 
@@ -481,10 +458,7 @@ export class WebhooksService {
   /**
    * Handle postback (button click)
    */
-  private async handlePostback(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handlePostback(page: any, event: WebhookMessagingEvent): Promise<void> {
     const senderId = event.sender.id;
     const postback = event.postback!;
     const timestamp = new Date(event.timestamp);
@@ -536,28 +510,26 @@ export class WebhooksService {
   /**
    * Handle referral (from ads, m.me links, etc.)
    */
-  private async handleReferral(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handleReferral(page: any, event: WebhookMessagingEvent): Promise<void> {
     const senderId = event.sender.id;
     const referral = event.referral!;
 
     this.logger.log(`Referral from ${senderId}: source=${referral.source}, ref=${referral.ref}`);
 
     // Get or create contact
-    let contact: { id: string; customFields?: any; source?: any; [key: string]: any } | null = await this.contactsService.findByPsidAndPage(
-      page.workspaceId,
-      senderId,
-      page.id,
-    );
+    let contact: { id: string; customFields?: any; source?: any; [key: string]: any } | null =
+      await this.contactsService.findByPsidAndPage(page.workspaceId, senderId, page.id);
 
     if (!contact) {
       // Determine source based on referral
-      const source = referral.source === 'ADS' ? ContactSource.AD : 
-                     referral.source === 'SHORTLINK' ? ContactSource.REFERRAL :
-                     referral.source === 'CUSTOMER_CHAT_PLUGIN' ? ContactSource.ORGANIC :
-                     ContactSource.ORGANIC;
+      const source =
+        referral.source === 'ADS'
+          ? ContactSource.AD
+          : referral.source === 'SHORTLINK'
+            ? ContactSource.REFERRAL
+            : referral.source === 'CUSTOMER_CHAT_PLUGIN'
+              ? ContactSource.ORGANIC
+              : ContactSource.ORGANIC;
 
       contact = await this.contactsService.create(page.workspaceId, {
         pageId: page.id,
@@ -572,17 +544,13 @@ export class WebhooksService {
   /**
    * Process referral data and update contact
    */
-  private async processReferralData(
-    page: any,
-    contact: any,
-    referral: any,
-  ): Promise<void> {
+  private async processReferralData(page: any, contact: any, referral: any): Promise<void> {
     // Update contact with referral info
     const customFields = contact.customFields || {};
     customFields.referral_source = referral.source;
     customFields.referral_ref = referral.ref;
     customFields.referral_ad_id = referral.ad_id;
-    
+
     if (referral.ads_context_data) {
       customFields.ad_title = referral.ads_context_data.ad_title;
       customFields.ad_post_id = referral.ads_context_data.post_id;
@@ -600,10 +568,7 @@ export class WebhooksService {
   /**
    * Handle opt-in event (OTN, recurring notifications)
    */
-  private async handleOptin(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handleOptin(page: any, event: WebhookMessagingEvent): Promise<void> {
     const senderId = event.sender.id;
     const optin = event.optin!;
 
@@ -639,7 +604,7 @@ export class WebhooksService {
 
     // Handle Recurring Notification subscription
     if (optin.notification_messages_token) {
-      const expiresAt = optin.token_expiry_timestamp 
+      const expiresAt = optin.token_expiry_timestamp
         ? new Date(optin.token_expiry_timestamp * 1000)
         : null;
 
@@ -692,10 +657,7 @@ export class WebhooksService {
   /**
    * Handle delivery receipt
    */
-  private async handleDelivery(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handleDelivery(page: any, event: WebhookMessagingEvent): Promise<void> {
     const delivery = event.delivery!;
     const deliveredAt = new Date(delivery.watermark);
 
@@ -733,10 +695,7 @@ export class WebhooksService {
   /**
    * Handle read receipt
    */
-  private async handleRead(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handleRead(page: any, event: WebhookMessagingEvent): Promise<void> {
     const read = event.read!;
     const readAt = new Date(read.watermark);
 
@@ -760,10 +719,7 @@ export class WebhooksService {
   /**
    * Handle reaction event
    */
-  private async handleReaction(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handleReaction(page: any, event: WebhookMessagingEvent): Promise<void> {
     const reaction = event.reaction!;
     this.logger.debug(`Reaction ${reaction.action}: ${reaction.reaction} on ${reaction.mid}`);
 
@@ -799,10 +755,7 @@ export class WebhooksService {
   /**
    * Handle policy enforcement event (warning, block, unblock)
    */
-  private async handlePolicyEnforcement(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handlePolicyEnforcement(page: any, event: WebhookMessagingEvent): Promise<void> {
     const policy = event['policy-enforcement']!;
     this.logger.warn(
       `Policy enforcement for page ${page.fbPageId}: action=${policy.action}, reason=${policy.reason || 'none'}`,
@@ -840,10 +793,7 @@ export class WebhooksService {
   /**
    * Handle pass thread control (another app takes primary)
    */
-  private async handlePassThreadControl(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handlePassThreadControl(page: any, event: WebhookMessagingEvent): Promise<void> {
     const data = event.pass_thread_control!;
     const senderId = event.sender.id;
     this.logger.log(
@@ -868,10 +818,7 @@ export class WebhooksService {
   /**
    * Handle take thread control (we take primary back)
    */
-  private async handleTakeThreadControl(
-    page: any,
-    event: WebhookMessagingEvent,
-  ): Promise<void> {
+  private async handleTakeThreadControl(page: any, event: WebhookMessagingEvent): Promise<void> {
     const data = event.take_thread_control!;
     const senderId = event.sender.id;
     this.logger.log(

@@ -57,16 +57,16 @@ export interface QueueStats {
 @Injectable()
 export class MessageQueueService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MessageQueueService.name);
-  
+
   // Queues
   private messageQueue: Queue<MessageJobData>;
   private campaignQueue: Queue<MessageJobData>;
   private scheduledQueue: Queue<MessageJobData>;
-  
+
   // Queue events for monitoring
   private messageQueueEvents: QueueEvents;
   private campaignQueueEvents: QueueEvents;
-  
+
   // Workers will be created separately (in processor modules)
   private workers: Map<string, Worker> = new Map();
 
@@ -97,9 +97,7 @@ export class MessageQueueService implements OnModuleInit, OnModuleDestroy {
   // BullMQ requires dedicated Redis connection with maxRetriesPerRequest: null
   private bullMqConnection: Redis;
 
-  constructor(
-    private config: ConfigService,
-  ) {}
+  constructor(private config: ConfigService) {}
 
   // ===========================================
   // Lifecycle
@@ -237,12 +235,9 @@ export class MessageQueueService implements OnModuleInit, OnModuleDestroy {
   /**
    * Schedule a message for later
    */
-  async scheduleMessage(
-    data: MessageJobData,
-    scheduledAt: Date,
-  ): Promise<Job<MessageJobData>> {
+  async scheduleMessage(data: MessageJobData, scheduledAt: Date): Promise<Job<MessageJobData>> {
     const delay = scheduledAt.getTime() - Date.now();
-    
+
     if (delay < 0) {
       throw new Error('Scheduled time must be in the future');
     }
@@ -444,19 +439,25 @@ export class MessageQueueService implements OnModuleInit, OnModuleDestroy {
     progress: number;
   }> {
     // Get all jobs matching the batch ID pattern
-    const jobs = await this.campaignQueue.getJobs(['completed', 'failed', 'waiting', 'active', 'delayed']);
-    
-    const batchJobs = jobs.filter(job => job.id?.startsWith(batchId));
+    const jobs = await this.campaignQueue.getJobs([
+      'completed',
+      'failed',
+      'waiting',
+      'active',
+      'delayed',
+    ]);
+
+    const batchJobs = jobs.filter((job) => job.id?.startsWith(batchId));
     const total = batchJobs.length;
-    
+
     if (total === 0) {
       return { total: 0, completed: 0, failed: 0, pending: 0, progress: 0 };
     }
 
-    const states = await Promise.all(batchJobs.map(job => job.getState()));
-    
-    const completed = states.filter(s => s === 'completed').length;
-    const failed = states.filter(s => s === 'failed').length;
+    const states = await Promise.all(batchJobs.map((job) => job.getState()));
+
+    const completed = states.filter((s) => s === 'completed').length;
+    const failed = states.filter((s) => s === 'failed').length;
     const pending = total - completed - failed;
 
     return {

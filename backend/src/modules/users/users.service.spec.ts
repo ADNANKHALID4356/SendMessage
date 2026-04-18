@@ -46,10 +46,7 @@ describe('UsersService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        UsersService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [UsersService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
@@ -137,9 +134,7 @@ describe('UsersService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.findById('nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findById('nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -164,18 +159,18 @@ describe('UsersService', () => {
     it('should throw NotFoundException when user does not exist', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.updateWorkspaceAccess('nonexistent', 'ws-1', 'ADMIN'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateWorkspaceAccess('nonexistent', 'ws-1', 'ADMIN')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException when workspace does not exist', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'u-1' });
       mockPrisma.workspace.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.updateWorkspaceAccess('u-1', 'nonexistent', 'ADMIN'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateWorkspaceAccess('u-1', 'nonexistent', 'ADMIN')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -217,9 +212,7 @@ describe('UsersService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.resetPassword('nonexistent', 'hash'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.resetPassword('nonexistent', 'hash')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -229,7 +222,13 @@ describe('UsersService', () => {
   describe('getUserSessions', () => {
     it('should return active sessions only', async () => {
       const sessions = [
-        { id: 's-1', ipAddress: '1.2.3.4', userAgent: 'Chrome', createdAt: new Date(), expiresAt: new Date() },
+        {
+          id: 's-1',
+          ipAddress: '1.2.3.4',
+          userAgent: 'Chrome',
+          createdAt: new Date(),
+          expiresAt: new Date(),
+        },
       ];
       mockPrisma.session.findMany.mockResolvedValue(sessions);
 
@@ -261,9 +260,7 @@ describe('UsersService', () => {
     it('should throw NotFoundException when session not found', async () => {
       mockPrisma.session.delete.mockRejectedValue(new Error('not found'));
 
-      await expect(service.terminateSession('nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.terminateSession('nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 

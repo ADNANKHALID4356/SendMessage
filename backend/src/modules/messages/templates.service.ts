@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateTemplateDto,
@@ -135,7 +130,11 @@ export class TemplatesService {
     });
   }
 
-  async updateCannedResponse(workspaceId: string, responseId: string, dto: UpdateCannedResponseDto) {
+  async updateCannedResponse(
+    workspaceId: string,
+    responseId: string,
+    dto: UpdateCannedResponseDto,
+  ) {
     const response = await this.prisma.cannedResponse.findFirst({
       where: { id: responseId, workspaceId },
     });

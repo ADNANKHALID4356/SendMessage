@@ -14,7 +14,10 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ContactSource as PrismaContactSource, EngagementLevel as PrismaEngagementLevel } from '@prisma/client';
+import {
+  ContactSource as PrismaContactSource,
+  EngagementLevel as PrismaEngagementLevel,
+} from '@prisma/client';
 
 // Re-export Prisma enums for use in DTOs and elsewhere
 export const ContactSource = PrismaContactSource;

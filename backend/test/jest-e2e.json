@@ -7,7 +7,8 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
-    "^@messagesender/shared$": "<rootDir>/../shared/src/index.ts"
+    "^@messagesender/shared$": "<rootDir>/../../shared/src/index.ts",
+    "^@/(.*)$": "<rootDir>/../src/$1"
   },
-  "setupFilesAfterEnv": ["<rootDir>/test/setup.ts"]
+  "setupFilesAfterEnv": ["<rootDir>/setup.ts"]
 }

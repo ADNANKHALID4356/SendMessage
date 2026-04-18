@@ -69,9 +69,7 @@ describe('BackupService — Scheduled Backup & Retention', () => {
     });
 
     it('should have Cron metadata on handleScheduledBackup', () => {
-      const metadata = Reflect.getMetadataKeys(
-        BackupService.prototype.handleScheduledBackup,
-      );
+      const metadata = Reflect.getMetadataKeys(BackupService.prototype.handleScheduledBackup);
       expect(metadata.length).toBeGreaterThan(0);
     });
   });
@@ -114,7 +112,8 @@ describe('BackupService — Scheduled Backup & Retention', () => {
         { id: 'ws-2', name: 'Working' },
       ]);
 
-      const createSpy = jest.spyOn(service, 'createBackup')
+      const createSpy = jest
+        .spyOn(service, 'createBackup')
         .mockRejectedValueOnce(new Error('Disk full'))
         .mockResolvedValueOnce({
           id: 'bkp_2',
@@ -193,9 +192,7 @@ describe('BackupService — Scheduled Backup & Retention', () => {
       expect(mockPrisma.systemSetting.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           update: {
-            value: expect.arrayContaining([
-              expect.objectContaining({ id: 'bkp_recent' }),
-            ]),
+            value: expect.arrayContaining([expect.objectContaining({ id: 'bkp_recent' })]),
           },
         }),
       );

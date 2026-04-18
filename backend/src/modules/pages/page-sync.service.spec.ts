@@ -33,7 +33,15 @@ describe('PageSyncService', () => {
         PageSyncService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: FacebookApiService, useValue: mockFacebookApi },
-        { provide: EncryptionService, useValue: { encrypt: jest.fn((v) => `encrypted:${v}`), decrypt: jest.fn((v) => v), encryptIfNeeded: jest.fn((v) => v), decryptIfNeeded: jest.fn((v) => v) } },
+        {
+          provide: EncryptionService,
+          useValue: {
+            encrypt: jest.fn((v) => `encrypted:${v}`),
+            decrypt: jest.fn((v) => v),
+            encryptIfNeeded: jest.fn((v) => v),
+            decryptIfNeeded: jest.fn((v) => v),
+          },
+        },
       ],
     }).compile();
 

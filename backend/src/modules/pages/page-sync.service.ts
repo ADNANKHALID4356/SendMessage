@@ -109,10 +109,12 @@ export class PageSyncService implements OnApplicationShutdown {
         this.logger.warn(`Failed to sync page ${page.id}: ${error.message}`);
 
         // Record error
-        await this.prisma.page.update({
-          where: { id: page.id },
-          data: { tokenError: error.message },
-        }).catch(() => {});
+        await this.prisma.page
+          .update({
+            where: { id: page.id },
+            data: { tokenError: error.message },
+          })
+          .catch(() => {});
       }
     }
 
@@ -144,7 +146,10 @@ export class PageSyncService implements OnApplicationShutdown {
 
     try {
       // Fetch updated page info from Facebook
-      const pageInfo = await this.facebookApi.getPageInfo(page.fbPageId, this.encryption.decryptIfNeeded(page.accessToken));
+      const pageInfo = await this.facebookApi.getPageInfo(
+        page.fbPageId,
+        this.encryption.decryptIfNeeded(page.accessToken),
+      );
 
       // Update page data
       await this.prisma.page.update({
@@ -278,7 +283,10 @@ export class PageSyncService implements OnApplicationShutdown {
 
     for (const page of unsubscribedPages) {
       try {
-        await this.facebookApi.subscribePageToWebhook(page.fbPageId, this.encryption.decryptIfNeeded(page.accessToken));
+        await this.facebookApi.subscribePageToWebhook(
+          page.fbPageId,
+          this.encryption.decryptIfNeeded(page.accessToken),
+        );
         await this.prisma.page.update({
           where: { id: page.id },
           data: { webhookSubscribed: true },
@@ -300,16 +308,18 @@ export class PageSyncService implements OnApplicationShutdown {
   /**
    * Get page health status for all pages in a workspace
    */
-  async getPageHealthStatus(workspaceId: string): Promise<Array<{
-    pageId: string;
-    pageName: string;
-    isActive: boolean;
-    webhookSubscribed: boolean;
-    tokenStatus: 'valid' | 'expiring_soon' | 'expired' | 'error';
-    lastSyncedAt: string | null;
-    tokenError: string | null;
-    followersCount: number;
-  }>> {
+  async getPageHealthStatus(workspaceId: string): Promise<
+    Array<{
+      pageId: string;
+      pageName: string;
+      isActive: boolean;
+      webhookSubscribed: boolean;
+      tokenStatus: 'valid' | 'expiring_soon' | 'expired' | 'error';
+      lastSyncedAt: string | null;
+      tokenError: string | null;
+      followersCount: number;
+    }>
+  > {
     const pages = await this.prisma.page.findMany({
       where: { workspaceId },
       select: {
@@ -324,11 +334,12 @@ export class PageSyncService implements OnApplicationShutdown {
       },
     });
 
-    return pages.map(page => {
+    return pages.map((page) => {
       let tokenStatus: 'valid' | 'expiring_soon' | 'expired' | 'error' = 'valid';
       if (page.tokenError) tokenStatus = 'error';
       else if (page.tokenExpiresAt) {
-        const daysLeft = (new Date(page.tokenExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+        const daysLeft =
+          (new Date(page.tokenExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
         if (daysLeft <= 0) tokenStatus = 'expired';
         else if (daysLeft <= 7) tokenStatus = 'expiring_soon';
       }

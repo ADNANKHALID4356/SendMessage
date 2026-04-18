@@ -125,9 +125,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile retrieved' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(
-    @CurrentUser() user: { userId: string; isAdmin: boolean },
-  ) {
+  async getProfile(@CurrentUser() user: { userId: string; isAdmin: boolean }) {
     return this.authService.getAuthUser(user.userId, user.isAdmin);
   }
 
@@ -161,9 +159,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout all sessions' })
   @ApiResponse({ status: 200, description: 'All sessions logged out' })
-  async logoutAll(
-    @CurrentUser() user: { userId: string; isAdmin: boolean },
-  ) {
+  async logoutAll(@CurrentUser() user: { userId: string; isAdmin: boolean }) {
     await this.authService.logoutAllSessions(user.userId, user.isAdmin);
     return { message: 'All sessions logged out successfully' };
   }
@@ -179,11 +175,7 @@ export class AuthController {
     @CurrentUser() user: { userId: string; isAdmin: boolean },
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
-    await this.authService.changePassword(
-      user.userId,
-      user.isAdmin,
-      changePasswordDto,
-    );
+    await this.authService.changePassword(user.userId, user.isAdmin, changePasswordDto);
     return { message: 'Password changed successfully' };
   }
 
@@ -196,9 +188,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get notification preferences' })
   @ApiResponse({ status: 200, description: 'Notification preferences retrieved' })
-  async getNotificationPreferences(
-    @CurrentUser() user: { userId: string; isAdmin: boolean },
-  ) {
+  async getNotificationPreferences(@CurrentUser() user: { userId: string; isAdmin: boolean }) {
     return this.authService.getNotificationPreferences(user.userId, user.isAdmin);
   }
 
@@ -223,9 +213,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all active sessions for current user' })
   @ApiResponse({ status: 200, description: 'List of active sessions' })
-  async getSessions(
-    @CurrentUser() user: { userId: string; isAdmin: boolean; sessionId: string },
-  ) {
+  async getSessions(@CurrentUser() user: { userId: string; isAdmin: boolean; sessionId: string }) {
     return this.authService.getUserSessions(user.userId, user.isAdmin, user.sessionId);
   }
 
@@ -240,7 +228,12 @@ export class AuthController {
     @CurrentUser() user: { userId: string; isAdmin: boolean; sessionId: string },
     @Param('sessionId') targetSessionId: string,
   ) {
-    await this.authService.terminateSession(user.sessionId, targetSessionId, user.userId, user.isAdmin);
+    await this.authService.terminateSession(
+      user.sessionId,
+      targetSessionId,
+      user.userId,
+      user.isAdmin,
+    );
     return { message: 'Session terminated successfully' };
   }
 
@@ -272,7 +265,11 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Approve a pending user (admin only)' })
   @ApiQuery({ name: 'workspaceId', required: false, description: 'Workspace to grant access' })
-  @ApiQuery({ name: 'permissionLevel', required: false, description: 'Permission level: VIEW_ONLY, OPERATOR, MANAGER' })
+  @ApiQuery({
+    name: 'permissionLevel',
+    required: false,
+    description: 'Permission level: VIEW_ONLY, OPERATOR, MANAGER',
+  })
   @ApiResponse({ status: 200, description: 'User approved' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async approveUser(
@@ -322,7 +319,11 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Grant workspace access to a user (admin only)' })
   @ApiQuery({ name: 'workspaceId', required: true, description: 'Workspace ID' })
-  @ApiQuery({ name: 'permissionLevel', required: true, description: 'Permission level: VIEW_ONLY, OPERATOR, MANAGER' })
+  @ApiQuery({
+    name: 'permissionLevel',
+    required: true,
+    description: 'Permission level: VIEW_ONLY, OPERATOR, MANAGER',
+  })
   @ApiResponse({ status: 200, description: 'Workspace access granted' })
   async grantWorkspaceAccess(
     @Param('userId') userId: string,

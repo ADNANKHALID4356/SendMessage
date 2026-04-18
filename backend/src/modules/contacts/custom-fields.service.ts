@@ -346,9 +346,7 @@ export class CustomFieldsService {
           throw new BadRequestException(`Field "${key}" must be a string`);
         }
         if (!options.includes(value as string)) {
-          throw new BadRequestException(
-            `Field "${key}" must be one of: ${options.join(', ')}`,
-          );
+          throw new BadRequestException(`Field "${key}" must be one of: ${options.join(', ')}`);
         }
         break;
 

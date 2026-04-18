@@ -12,11 +12,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 // ===========================================
 
 interface ScoringWeights {
-  recentMessage: number;      // Points for message within 24h
-  messageVolume: number;      // Points per message (capped)
-  bidirectional: number;      // Bonus for two-way conversations
-  recencyDecay: number;       // Decay factor per day of inactivity
-  subscriptionBonus: number;  // Bonus for active subscriptions
+  recentMessage: number; // Points for message within 24h
+  messageVolume: number; // Points per message (capped)
+  bidirectional: number; // Bonus for two-way conversations
+  recencyDecay: number; // Decay factor per day of inactivity
+  subscriptionBonus: number; // Bonus for active subscriptions
 }
 
 const DEFAULT_WEIGHTS: ScoringWeights = {
@@ -99,10 +99,7 @@ export class EngagementScoringService {
   /**
    * Calculate engagement score for a single contact (0-100)
    */
-  calculateScore(
-    contact: ContactForScoring,
-    weights: ScoringWeights = DEFAULT_WEIGHTS,
-  ): number {
+  calculateScore(contact: ContactForScoring, weights: ScoringWeights = DEFAULT_WEIGHTS): number {
     let score = 0;
     const now = Date.now();
 
@@ -131,7 +128,8 @@ export class EngagementScoringService {
 
     // 5. Recency decay — reduce score based on inactivity
     if (contact.lastInteractionAt) {
-      const daysSinceInteraction = (now - contact.lastInteractionAt.getTime()) / (1000 * 60 * 60 * 24);
+      const daysSinceInteraction =
+        (now - contact.lastInteractionAt.getTime()) / (1000 * 60 * 60 * 24);
       const decay = Math.max(0, daysSinceInteraction * weights.recencyDecay);
       score = Math.max(0, score - decay);
     }

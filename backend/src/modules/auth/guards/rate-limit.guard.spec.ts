@@ -18,32 +18,30 @@ describe('LoginRateLimitGuard', () => {
     del: jest.fn(),
   };
 
-  const createMockContext = (ip: string, email: string): ExecutionContext => ({
-    switchToHttp: () => ({
-      getRequest: () => ({
-        ip,
-        body: { email },
+  const createMockContext = (ip: string, email: string): ExecutionContext =>
+    ({
+      switchToHttp: () => ({
+        getRequest: () => ({
+          ip,
+          body: { email },
+        }),
+        getResponse: jest.fn(),
+        getNext: jest.fn(),
       }),
-      getResponse: jest.fn(),
-      getNext: jest.fn(),
-    }),
-    getClass: jest.fn(),
-    getHandler: jest.fn(),
-    getArgs: jest.fn(),
-    getArgByIndex: jest.fn(),
-    switchToRpc: jest.fn(),
-    switchToWs: jest.fn(),
-    getType: jest.fn(),
-  } as unknown as ExecutionContext);
+      getClass: jest.fn(),
+      getHandler: jest.fn(),
+      getArgs: jest.fn(),
+      getArgByIndex: jest.fn(),
+      switchToRpc: jest.fn(),
+      switchToWs: jest.fn(),
+      getType: jest.fn(),
+    }) as unknown as ExecutionContext;
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        LoginRateLimitGuard,
-        { provide: RedisService, useValue: mockRedisService },
-      ],
+      providers: [LoginRateLimitGuard, { provide: RedisService, useValue: mockRedisService }],
     }).compile();
 
     guard = module.get<LoginRateLimitGuard>(LoginRateLimitGuard);
@@ -188,9 +186,7 @@ describe('LoginRateLimitGuard', () => {
     it('should not throw on Redis errors', async () => {
       mockRedisService.del.mockRejectedValue(new Error('Redis error'));
 
-      await expect(
-        guard.clearAttempts('192.168.1.1', 'user@test.com'),
-      ).resolves.not.toThrow();
+      await expect(guard.clearAttempts('192.168.1.1', 'user@test.com')).resolves.not.toThrow();
     });
   });
 });
@@ -210,31 +206,29 @@ describe('ApiRateLimitGuard', () => {
     getClient: jest.fn().mockReturnValue(mockClient),
   };
 
-  const createMockContext = (ip: string, route: string): ExecutionContext => ({
-    switchToHttp: () => ({
-      getRequest: () => ({
-        ip,
-        route: { path: route },
-        url: route,
+  const createMockContext = (ip: string, route: string): ExecutionContext =>
+    ({
+      switchToHttp: () => ({
+        getRequest: () => ({
+          ip,
+          route: { path: route },
+          url: route,
+        }),
       }),
-    }),
-    getClass: jest.fn(),
-    getHandler: jest.fn(),
-    getArgs: jest.fn(),
-    getArgByIndex: jest.fn(),
-    switchToRpc: jest.fn(),
-    switchToWs: jest.fn(),
-    getType: jest.fn(),
-  } as unknown as ExecutionContext);
+      getClass: jest.fn(),
+      getHandler: jest.fn(),
+      getArgs: jest.fn(),
+      getArgByIndex: jest.fn(),
+      switchToRpc: jest.fn(),
+      switchToWs: jest.fn(),
+      getType: jest.fn(),
+    }) as unknown as ExecutionContext;
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ApiRateLimitGuard,
-        { provide: RedisService, useValue: mockRedisService },
-      ],
+      providers: [ApiRateLimitGuard, { provide: RedisService, useValue: mockRedisService }],
     }).compile();
 
     guard = module.get<ApiRateLimitGuard>(ApiRateLimitGuard);
@@ -252,10 +246,7 @@ describe('ApiRateLimitGuard', () => {
 
     expect(result).toBe(true);
     expect(mockClient.incr).toHaveBeenCalledWith('api_rate:192.168.1.1:/api/v1/contacts');
-    expect(mockClient.expire).toHaveBeenCalledWith(
-      'api_rate:192.168.1.1:/api/v1/contacts',
-      60,
-    );
+    expect(mockClient.expire).toHaveBeenCalledWith('api_rate:192.168.1.1:/api/v1/contacts', 60);
   });
 
   it('should allow request at exactly 100 requests', async () => {

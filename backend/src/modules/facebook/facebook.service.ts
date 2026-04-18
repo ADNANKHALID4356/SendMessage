@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
@@ -33,7 +28,7 @@ export class FacebookService {
     private fbApi: FacebookApiService,
     private fbConfig: FacebookConfigService,
     private configService: ConfigService,
-    private encryption: EncryptionService
+    private encryption: EncryptionService,
   ) {}
 
   /**
@@ -56,7 +51,7 @@ export class FacebookService {
 
     if (existingAccount) {
       throw new BadRequestException(
-        'Workspace already has a connected Facebook account. Disconnect first.'
+        'Workspace already has a connected Facebook account. Disconnect first.',
       );
     }
 
@@ -73,7 +68,7 @@ export class FacebookService {
     await this.redis.set(
       `${OAUTH_STATE_PREFIX}${stateToken}`,
       JSON.stringify(state),
-      OAUTH_STATE_TTL
+      OAUTH_STATE_TTL,
     );
 
     // Build authorization URL
@@ -86,7 +81,10 @@ export class FacebookService {
   /**
    * Handle OAuth callback
    */
-  async handleCallback(code: string, state: string): Promise<{
+  async handleCallback(
+    code: string,
+    state: string,
+  ): Promise<{
     success: boolean;
     workspaceId: string;
     redirectUrl?: string;
@@ -137,7 +135,7 @@ export class FacebookService {
     });
 
     this.logger.log(
-      `Facebook account ${userInfo.id} connected to workspace ${oauthState.workspaceId}`
+      `Facebook account ${userInfo.id} connected to workspace ${oauthState.workspaceId}`,
     );
 
     return {
@@ -177,7 +175,7 @@ export class FacebookService {
     return pages.map((page) => ({
       id: page.id,
       pageId: page.id,
-          name: page.name ?? page.id ?? 'Unknown Page',
+      name: page.name ?? page.id ?? 'Unknown Page',
       category: page.category,
       picture: page.picture?.data?.url,
       isConnected: connectedPageIds.has(page.id),
@@ -195,7 +193,7 @@ export class FacebookService {
     // Validate DTO data is present
     if (!dto.facebookAccountId || !dto.pageId || !dto.pageName) {
       throw new BadRequestException(
-        'Missing required fields: facebookAccountId, pageId, and pageName are required'
+        'Missing required fields: facebookAccountId, pageId, and pageName are required',
       );
     }
 
@@ -214,7 +212,7 @@ export class FacebookService {
 
     if (existingPage && existingPage.isActive) {
       throw new BadRequestException(
-        `Page "${dto.pageName}" is already actively connected${existingPage.workspaceId !== workspaceId ? ' to another workspace' : ''}.`
+        `Page "${dto.pageName}" is already actively connected${existingPage.workspaceId !== workspaceId ? ' to another workspace' : ''}.`,
       );
     }
 
@@ -240,7 +238,7 @@ export class FacebookService {
       } catch (error) {
         this.logger.error(`Failed to fetch user pages from Facebook: ${error}`);
         throw new BadRequestException(
-          'Failed to fetch pages from Facebook. Your access token may have expired — please reconnect your Facebook account.'
+          'Failed to fetch pages from Facebook. Your access token may have expired — please reconnect your Facebook account.',
         );
       }
 
@@ -260,12 +258,14 @@ export class FacebookService {
       } else {
         // Fallback: request the page token directly via /{pageId}?fields=access_token
         this.logger.warn(
-          `access_token not returned by /me/accounts for page ${dto.pageId} — trying direct page token endpoint`
+          `access_token not returned by /me/accounts for page ${dto.pageId} — trying direct page token endpoint`,
         );
         try {
           pageAccessToken = await this.fbApi.getPageAccessToken(dto.pageId, decryptedToken);
         } catch (fallbackError) {
-          this.logger.error(`Fallback getPageAccessToken failed for page ${dto.pageId}: ${fallbackError}`);
+          this.logger.error(
+            `Fallback getPageAccessToken failed for page ${dto.pageId}: ${fallbackError}`,
+          );
           throw new BadRequestException(
             'No access token available for this page. Ensure you have Admin access to the page and that the app has the required permissions (pages_manage_metadata).',
           );
@@ -274,14 +274,11 @@ export class FacebookService {
     }
 
     // Subscribe page to webhook
-    const subscribed = await this.fbApi.subscribePageToWebhook(
-      dto.pageId,
-      pageAccessToken
-    );
+    const subscribed = await this.fbApi.subscribePageToWebhook(dto.pageId, pageAccessToken);
 
     if (!subscribed) {
       this.logger.warn(
-        `Failed to subscribe page ${dto.pageId} to webhook. Messages may not be received.`
+        `Failed to subscribe page ${dto.pageId} to webhook. Messages may not be received.`,
       );
     }
 
@@ -303,7 +300,9 @@ export class FacebookService {
           tokenError: null,
         },
       });
-      this.logger.log(`Page ${dto.pageName} (${dto.pageId}) reactivated in workspace ${workspaceId}`);
+      this.logger.log(
+        `Page ${dto.pageName} (${dto.pageId}) reactivated in workspace ${workspaceId}`,
+      );
     } else {
       // Create brand-new page record
       page = await this.prisma.page.create({
@@ -337,7 +336,10 @@ export class FacebookService {
     }
 
     // Unsubscribe from webhook
-    await this.fbApi.unsubscribePageFromWebhook(page.fbPageId, this.encryption.decryptIfNeeded(page.accessToken));
+    await this.fbApi.unsubscribePageFromWebhook(
+      page.fbPageId,
+      this.encryption.decryptIfNeeded(page.accessToken),
+    );
 
     // Soft delete - deactivate the page
     await this.prisma.page.update({
@@ -368,7 +370,10 @@ export class FacebookService {
     });
 
     for (const page of pages) {
-      await this.fbApi.unsubscribePageFromWebhook(page.fbPageId, this.encryption.decryptIfNeeded(page.accessToken));
+      await this.fbApi.unsubscribePageFromWebhook(
+        page.fbPageId,
+        this.encryption.decryptIfNeeded(page.accessToken),
+      );
     }
 
     // Delete account (cascades to pages)
@@ -398,9 +403,7 @@ export class FacebookService {
     const tokenInfo = await this.fbApi.debugToken(decryptedToken);
 
     if (!tokenInfo.is_valid) {
-      throw new BadRequestException(
-        'Token is no longer valid. User needs to re-authenticate.'
-      );
+      throw new BadRequestException('Token is no longer valid. User needs to re-authenticate.');
     }
 
     // Try to get a new long-lived token
@@ -445,7 +448,9 @@ export class FacebookService {
     }
 
     // Check token validity
-    const tokenInfo = await this.fbApi.debugToken(this.encryption.decryptIfNeeded(account.accessToken));
+    const tokenInfo = await this.fbApi.debugToken(
+      this.encryption.decryptIfNeeded(account.accessToken),
+    );
 
     return {
       connected: true,
@@ -470,10 +475,7 @@ export class FacebookService {
    * Get OAuth redirect URI based on environment
    */
   private getOAuthRedirectUri(): string {
-    const baseUrl = this.configService.get<string>(
-      'API_BASE_URL',
-      'http://localhost:4000'
-    );
+    const baseUrl = this.configService.get<string>('API_BASE_URL', 'http://localhost:4000');
     return `${baseUrl}/api/v1/facebook/callback`;
   }
 
@@ -547,7 +549,7 @@ export class FacebookService {
         name: mockAccount.fbUserName,
         tokenExpiresAt: mockAccount.tokenExpiresAt,
       },
-      pages: createdPages.map(p => ({
+      pages: createdPages.map((p) => ({
         id: p.id,
         pageId: p.fbPageId,
         name: p.name,

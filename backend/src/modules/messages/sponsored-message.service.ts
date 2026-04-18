@@ -77,13 +77,15 @@ export class SponsoredMessageService {
     });
   }
 
-  private async findCampaignInDb(campaignId: string): Promise<{ campaign: StoredCampaign; workspaceId: string } | null> {
+  private async findCampaignInDb(
+    campaignId: string,
+  ): Promise<{ campaign: StoredCampaign; workspaceId: string } | null> {
     const settings = await this.prisma.systemSetting.findMany({
       where: { key: { startsWith: 'sponsored_campaigns_' } },
     });
     for (const s of settings) {
       const list = s.value as unknown as StoredCampaign[];
-      const found = list.find(c => c.id === campaignId);
+      const found = list.find((c) => c.id === campaignId);
       if (found) return { campaign: found, workspaceId: s.key.replace('sponsored_campaigns_', '') };
     }
     return null;
@@ -176,7 +178,7 @@ export class SponsoredMessageService {
     }
 
     const registry = await this.getRegistry(found.workspaceId);
-    const idx = registry.findIndex(c => c.id === campaignId);
+    const idx = registry.findIndex((c) => c.id === campaignId);
     if (idx >= 0) {
       registry[idx].status = 'pending_review';
       registry[idx].adAccountId = adAccountId;
@@ -212,7 +214,7 @@ export class SponsoredMessageService {
     }
 
     const registry = await this.getRegistry(found.workspaceId);
-    const idx = registry.findIndex(c => c.id === campaignId);
+    const idx = registry.findIndex((c) => c.id === campaignId);
     if (idx >= 0) {
       registry[idx].status = newStatus;
       if (newStatus === 'active' && !registry[idx].startDate) {
@@ -236,7 +238,9 @@ export class SponsoredMessageService {
 
   async listCampaigns(workspaceId: string): Promise<SponsoredCampaignResult[]> {
     const registry = await this.getRegistry(workspaceId);
-    return registry.map(c => this.stripParams(c)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return registry
+      .map((c) => this.stripParams(c))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async getCampaignStats(campaignId: string): Promise<SponsoredCampaignStats> {
@@ -258,10 +262,10 @@ export class SponsoredMessageService {
 
           // Extract message-specific actions
           const messagesSent = insights.actions?.find(
-            a => a.action_type === 'onsite_conversion.messaging_first_reply',
+            (a) => a.action_type === 'onsite_conversion.messaging_first_reply',
           );
           const messagesOpened = insights.actions?.find(
-            a => a.action_type === 'onsite_conversion.messaging_conversation_started_7d',
+            (a) => a.action_type === 'onsite_conversion.messaging_conversation_started_7d',
           );
 
           return {
@@ -303,7 +307,7 @@ export class SponsoredMessageService {
     }
 
     const registry = await this.getRegistry(found.workspaceId);
-    const filtered = registry.filter(c => c.id !== campaignId);
+    const filtered = registry.filter((c) => c.id !== campaignId);
     await this.saveRegistry(found.workspaceId, filtered);
     return { success: true };
   }

@@ -107,6 +107,8 @@ export interface SendMessageRequest {
     attachmentUrl?: string;
   };
   metadata?: Record<string, unknown>;
+  bypassMethod?: string;
+  messageTag?: string;
 }
 
 export interface SendQuickMessageRequest {
@@ -293,3 +295,5 @@ export const messageService = {
 };
 
 export default { conversationService, messageService };
+
+

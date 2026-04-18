@@ -26,7 +26,8 @@ describe('Phase1 Integration: Encryption ↔ Token Lifecycle', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string, def?: string) => {
-              if (key === 'ENCRYPTION_KEY') return 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+              if (key === 'ENCRYPTION_KEY')
+                return 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
               if (key === 'NODE_ENV') return 'test';
               return def;
             }),
@@ -74,7 +75,7 @@ describe('Phase1 Integration: Encryption ↔ Token Lifecycle', () => {
         'recurring_token_abc',
       ];
 
-      const encrypted = tokens.map(t => encryption.encrypt(t));
+      const encrypted = tokens.map((t) => encryption.encrypt(t));
 
       // All should be unique ciphertext
       expect(new Set(encrypted).size).toBe(encrypted.length);
@@ -116,13 +117,13 @@ describe('Phase1 Integration: Encryption ↔ Token Lifecycle', () => {
       ];
 
       // encryptIfNeeded should be idempotent
-      const migrated = records.map(r => ({
+      const migrated = records.map((r) => ({
         ...r,
         accessToken: encryption.encryptIfNeeded(r.accessToken),
       }));
 
       // All should now be encrypted
-      migrated.forEach(r => {
+      migrated.forEach((r) => {
         expect(encryption.isEncrypted(r.accessToken)).toBe(true);
       });
 
@@ -175,7 +176,7 @@ describe('Phase1 Grey-Hat Security Tests', () => {
       // Flip every bit position in the first byte
       for (let bit = 0; bit < 8; bit++) {
         const tampered = Buffer.from(ct);
-        tampered[0] ^= (1 << bit);
+        tampered[0] ^= 1 << bit;
         const modified = [parts[0], parts[1], tampered.toString('base64')].join(':');
         expect(() => encryption.decrypt(modified)).toThrow();
       }
@@ -246,7 +247,7 @@ describe('Phase1 Grey-Hat Security Tests', () => {
   describe('chosen-ciphertext attack resistance', () => {
     it('should not reveal key material through error messages', () => {
       const malicious = [
-        'AAAAAAAAAAAAAAAA:AAAAAAAAAAAAAAAAAAAAAA==:AAAA',  // all zeros
+        'AAAAAAAAAAAAAAAA:AAAAAAAAAAAAAAAAAAAAAA==:AAAA', // all zeros
         'AAAAAAAAAAAAAAAA:' + 'A'.repeat(24) + ':' + 'B'.repeat(100), // large payload
       ];
 
@@ -267,7 +268,7 @@ describe('Phase1 Grey-Hat Security Tests', () => {
   });
 
   // ===========================================
-  // Timing Attack Resistance  
+  // Timing Attack Resistance
   // ===========================================
 
   describe('timing attack considerations', () => {

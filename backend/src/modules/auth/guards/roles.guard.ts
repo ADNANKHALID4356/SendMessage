@@ -10,7 +10,7 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
  * OPERATOR: Can handle conversations and basic operations
  * VIEW_ONLY: Read-only access
  */
-export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'OPERATOR' | 'VIEW_ONLY';
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'OPERATOR' | 'VIEW_ONLY' | 'USER';
 
 // Role hierarchy for access level comparison
 const ROLE_HIERARCHY: Record<Role, number> = {
@@ -19,6 +19,7 @@ const ROLE_HIERARCHY: Record<Role, number> = {
   MANAGER: 60,
   OPERATOR: 40,
   VIEW_ONLY: 20,
+  USER: 10,
 };
 
 @Injectable()
@@ -47,8 +48,18 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    // For non-admin users, check their role from the request
-    // Role can be set by JwtStrategy or by workspace-level middleware
+    // If the endpoint requires workspace-level roles, we MUST defer to the WorkspaceGuard
+    // because RolesGuard doesn't have the workspace context natively.
+    // Workspace-level roles are: MANAGER, OPERATOR, VIEW_ONLY
+    const workspaceRoles: Role[] = ['MANAGER', 'OPERATOR', 'VIEW_ONLY'];
+    const hasWorkspaceRoleRequirement = requiredRoles.some((r) => workspaceRoles.includes(r));
+
+    if (hasWorkspaceRoleRequirement) {
+      // Defer to WorkspaceGuard to handle this logic correctly within context
+      return true;
+    }
+
+    // For global roles, check their system role
     const userRole = user.role as Role;
     if (!userRole) {
       return false;

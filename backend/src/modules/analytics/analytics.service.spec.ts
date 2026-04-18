@@ -17,10 +17,7 @@ describe('AnalyticsService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AnalyticsService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [AnalyticsService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<AnalyticsService>(AnalyticsService);
@@ -39,8 +36,8 @@ describe('AnalyticsService', () => {
     it('should return complete overview stats', async () => {
       mockPrisma.contact.count.mockResolvedValue(100);
       mockPrisma.conversation.count
-        .mockResolvedValueOnce(50)  // totalConversations
-        .mockResolvedValueOnce(5);  // unreadConversations
+        .mockResolvedValueOnce(50) // totalConversations
+        .mockResolvedValueOnce(5); // unreadConversations
       mockPrisma.message.count.mockResolvedValue(500);
       mockPrisma.campaign.count.mockResolvedValue(10);
       mockPrisma.page.count.mockResolvedValue(3);
@@ -86,9 +83,9 @@ describe('AnalyticsService', () => {
   describe('getMessageStats', () => {
     it('should return message statistics with daily breakdown', async () => {
       mockPrisma.message.count
-        .mockResolvedValueOnce(1000)  // totalMessages
-        .mockResolvedValueOnce(400)   // inboundMessages
-        .mockResolvedValueOnce(600);  // outboundMessages
+        .mockResolvedValueOnce(1000) // totalMessages
+        .mockResolvedValueOnce(400) // inboundMessages
+        .mockResolvedValueOnce(600); // outboundMessages
       mockPrisma.message.groupBy.mockResolvedValue([
         { status: 'SENT', _count: 600 },
         { status: 'DELIVERED', _count: 550 },
@@ -115,7 +112,7 @@ describe('AnalyticsService', () => {
     it('should calculate response rate correctly', async () => {
       mockPrisma.message.count
         .mockResolvedValueOnce(100)
-        .mockResolvedValueOnce(80)   // inbound
+        .mockResolvedValueOnce(80) // inbound
         .mockResolvedValueOnce(100); // outbound
       mockPrisma.message.groupBy.mockResolvedValue([]);
       mockPrisma.$queryRaw.mockResolvedValue([]);
@@ -143,17 +140,25 @@ describe('AnalyticsService', () => {
     it('should return campaign stats with delivery rate', async () => {
       mockPrisma.campaign.findMany.mockResolvedValue([
         {
-          id: 'c-1', name: 'Campaign 1', campaignType: 'ONE_TIME', status: 'COMPLETED',
-          sentCount: 100, deliveredCount: 90, failedCount: 10, createdAt: new Date(),
+          id: 'c-1',
+          name: 'Campaign 1',
+          campaignType: 'ONE_TIME',
+          status: 'COMPLETED',
+          sentCount: 100,
+          deliveredCount: 90,
+          failedCount: 10,
+          createdAt: new Date(),
         },
       ]);
       mockPrisma.campaign.groupBy.mockResolvedValue([
         {
-          status: 'COMPLETED', _count: 1,
+          status: 'COMPLETED',
+          _count: 1,
           _sum: { sentCount: 100, deliveredCount: 90, failedCount: 10 },
         },
         {
-          status: 'DRAFT', _count: 2,
+          status: 'DRAFT',
+          _count: 2,
           _sum: { sentCount: 0, deliveredCount: 0, failedCount: 0 },
         },
       ]);
@@ -176,14 +181,20 @@ describe('AnalyticsService', () => {
   describe('getContactGrowth', () => {
     it('should return contact growth with daily data', async () => {
       mockPrisma.contact.count
-        .mockResolvedValueOnce(200)  // total
-        .mockResolvedValueOnce(5)    // today
-        .mockResolvedValueOnce(30)   // week
-        .mockResolvedValueOnce(100)  // month
+        .mockResolvedValueOnce(200) // total
+        .mockResolvedValueOnce(5) // today
+        .mockResolvedValueOnce(30) // week
+        .mockResolvedValueOnce(100) // month
         .mockResolvedValueOnce(180); // subscribed
       mockPrisma.contact.groupBy
-        .mockResolvedValueOnce([{ source: 'MESSENGER', _count: 150 }, { source: 'IMPORT', _count: 50 }])
-        .mockResolvedValueOnce([{ engagementLevel: 'HOT', _count: 50 }, { engagementLevel: 'WARM', _count: 100 }]);
+        .mockResolvedValueOnce([
+          { source: 'MESSENGER', _count: 150 },
+          { source: 'IMPORT', _count: 50 },
+        ])
+        .mockResolvedValueOnce([
+          { engagementLevel: 'HOT', _count: 50 },
+          { engagementLevel: 'WARM', _count: 100 },
+        ]);
       mockPrisma.$queryRaw.mockResolvedValue([
         { date: '2026-02-08', count: 3 },
         { date: '2026-02-09', count: 5 },
@@ -208,8 +219,11 @@ describe('AnalyticsService', () => {
     it('should return page performance metrics', async () => {
       mockPrisma.page.findMany.mockResolvedValue([
         {
-          id: 'p-1', name: 'Test Page', profilePictureUrl: null,
-          followersCount: 500, isActive: true,
+          id: 'p-1',
+          name: 'Test Page',
+          profilePictureUrl: null,
+          followersCount: 500,
+          isActive: true,
           _count: { contacts: 200, messages: 1000, conversations: 50 },
         },
       ]);
@@ -231,8 +245,8 @@ describe('AnalyticsService', () => {
     it('should return engagement metrics with bypass usage', async () => {
       mockPrisma.contact.count
         .mockResolvedValueOnce(100) // total
-        .mockResolvedValueOnce(20)  // 24h
-        .mockResolvedValueOnce(50)  // 7d
+        .mockResolvedValueOnce(20) // 24h
+        .mockResolvedValueOnce(50) // 7d
         .mockResolvedValueOnce(80); // 30d
       mockPrisma.message.count.mockResolvedValue(500);
       mockPrisma.message.groupBy.mockResolvedValue([
@@ -240,8 +254,14 @@ describe('AnalyticsService', () => {
         { bypassMethod: 'OTN_TOKEN', _count: 50 },
       ]);
       mockPrisma.conversation.findMany.mockResolvedValue([
-        { createdAt: new Date('2026-02-09T10:00:00'), lastMessageAt: new Date('2026-02-09T10:10:00') },
-        { createdAt: new Date('2026-02-09T11:00:00'), lastMessageAt: new Date('2026-02-09T11:20:00') },
+        {
+          createdAt: new Date('2026-02-09T10:00:00'),
+          lastMessageAt: new Date('2026-02-09T10:10:00'),
+        },
+        {
+          createdAt: new Date('2026-02-09T11:00:00'),
+          lastMessageAt: new Date('2026-02-09T11:20:00'),
+        },
       ]);
 
       const result = await service.getEngagementMetrics('ws-1');

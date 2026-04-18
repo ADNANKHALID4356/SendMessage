@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MessageQueueService, MessageJobData } from '../messages/message-queue.service';
 import { CampaignStatus, ABWinnerCriteria } from '@prisma/client';
@@ -138,9 +133,7 @@ export class AbTestingService {
           type: 'CAMPAIGN',
         };
 
-        await this.messageQueue.addMessage(
-          jobData,
-        );
+        await this.messageQueue.addMessage(jobData);
       }
     }
 
@@ -154,9 +147,7 @@ export class AbTestingService {
       },
     });
 
-    this.logger.log(
-      `A/B test campaign ${campaignId} launched: ${JSON.stringify(variantSplits)}`,
-    );
+    this.logger.log(`A/B test campaign ${campaignId} launched: ${JSON.stringify(variantSplits)}`);
 
     return { totalRecipients: contactIds.length, variantSplits };
   }
@@ -168,10 +159,7 @@ export class AbTestingService {
   /**
    * Get A/B test results with per-variant stats
    */
-  async getAbTestResults(
-    workspaceId: string,
-    campaignId: string,
-  ): Promise<ABTestResult> {
+  async getAbTestResults(workspaceId: string, campaignId: string): Promise<ABTestResult> {
     const campaign = await this.prisma.campaign.findFirst({
       where: { id: campaignId, workspaceId, isAbTest: true },
     });
@@ -205,17 +193,21 @@ export class AbTestingService {
 
     // Build per-variant stats from message metadata
     // Since we store variant info in job metadata, we track by content matching
-    const variantStats: ABVariantStats[] = variants.map(variant => {
+    const variantStats: ABVariantStats[] = variants.map((variant) => {
       // Count messages matching this variant's content
-      const variantMessages = messages.filter(m => {
+      const variantMessages = messages.filter((m) => {
         const content = m.content as any;
         return content?.text === variant.content.text;
       });
 
-      const sent = variantMessages.filter(m => m.status !== 'PENDING' && m.status !== 'FAILED').length;
-      const delivered = variantMessages.filter(m => m.status === 'DELIVERED' || m.status === 'READ').length;
-      const failed = variantMessages.filter(m => m.status === 'FAILED').length;
-      const read = variantMessages.filter(m => m.status === 'READ').length;
+      const sent = variantMessages.filter(
+        (m) => m.status !== 'PENDING' && m.status !== 'FAILED',
+      ).length;
+      const delivered = variantMessages.filter(
+        (m) => m.status === 'DELIVERED' || m.status === 'READ',
+      ).length;
+      const failed = variantMessages.filter((m) => m.status === 'FAILED').length;
+      const read = variantMessages.filter((m) => m.status === 'READ').length;
       const total = variantMessages.length || 1;
 
       return {
@@ -257,10 +249,7 @@ export class AbTestingService {
   /**
    * Determine the winning variant based on criteria
    */
-  private determineWinner(
-    variants: ABVariantStats[],
-    criteria: ABWinnerCriteria,
-  ): string {
+  private determineWinner(variants: ABVariantStats[], criteria: ABWinnerCriteria): string {
     let best = variants[0];
 
     for (const v of variants) {
@@ -300,7 +289,7 @@ export class AbTestingService {
     if (!campaign) throw new NotFoundException('Campaign not found');
 
     const variants = campaign.abVariants as unknown as ABVariant[];
-    const winnerContent = variants.find(v => v.name === results.winnerVariant);
+    const winnerContent = variants.find((v) => v.name === results.winnerVariant);
     if (!winnerContent) throw new BadRequestException('Winner variant not found');
 
     // Get contacts who already received messages
@@ -308,11 +297,11 @@ export class AbTestingService {
       where: { campaignId },
       select: { contactId: true },
     });
-    const sentContactIds = new Set(sentMessages.map(m => m.contactId));
+    const sentContactIds = new Set(sentMessages.map((m) => m.contactId));
 
     // Get all audience contacts
     const allContactIds = await this.getAudienceContactIds(workspaceId, campaign);
-    const remainingContactIds = allContactIds.filter(id => !sentContactIds.has(id));
+    const remainingContactIds = allContactIds.filter((id) => !sentContactIds.has(id));
 
     if (remainingContactIds.length === 0) {
       return { additionalRecipients: 0 };
@@ -336,9 +325,7 @@ export class AbTestingService {
         type: 'CAMPAIGN',
       };
 
-      await this.messageQueue.addMessage(
-        jobData,
-      );
+      await this.messageQueue.addMessage(jobData);
     }
 
     this.logger.log(
@@ -359,7 +346,7 @@ export class AbTestingService {
           where: { workspaceId, isSubscribed: true },
           select: { id: true },
         });
-        return contacts.map(c => c.id);
+        return contacts.map((c) => c.id);
       }
       case 'SEGMENT': {
         if (!campaign.audienceSegmentId) return [];
@@ -367,14 +354,14 @@ export class AbTestingService {
           where: { segmentId: campaign.audienceSegmentId },
           select: { contactId: true },
         });
-        return sc.map(s => s.contactId);
+        return sc.map((s) => s.contactId);
       }
       case 'PAGES': {
         const contacts = await this.prisma.contact.findMany({
           where: { workspaceId, pageId: { in: campaign.audiencePageIds }, isSubscribed: true },
           select: { id: true },
         });
-        return contacts.map(c => c.id);
+        return contacts.map((c) => c.id);
       }
       case 'MANUAL':
         return campaign.audienceContactIds || [];

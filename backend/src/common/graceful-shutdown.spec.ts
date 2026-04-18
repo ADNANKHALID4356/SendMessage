@@ -26,9 +26,7 @@ describe('PrismaService - graceful shutdown', () => {
   });
 
   it('should call $disconnect on shutdown', async () => {
-    const disconnectSpy = jest
-      .spyOn(service, '$disconnect')
-      .mockResolvedValue(undefined);
+    const disconnectSpy = jest.spyOn(service, '$disconnect').mockResolvedValue(undefined);
 
     await service.onApplicationShutdown('SIGTERM');
     expect(disconnectSpy).toHaveBeenCalled();
@@ -77,7 +75,7 @@ describe('PageSyncService - graceful shutdown', () => {
     const { PageSyncService } = await import('../modules/pages/page-sync.service');
     service = new (PageSyncService as any)(
       { page: { findMany: jest.fn().mockResolvedValue([]) } }, // prisma
-      {},  // facebookApi
+      {}, // facebookApi
       { decryptIfNeeded: jest.fn((v: string) => v), encrypt: jest.fn((v: string) => v) }, // encryption
     );
   });

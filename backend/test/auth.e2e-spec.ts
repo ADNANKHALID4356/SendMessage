@@ -46,10 +46,7 @@ describe('Auth (e2e)', () => {
     it('should require username and password', async () => {
       if (!app) return;
 
-      return request(app.getHttpServer())
-        .post('/auth/login')
-        .send({})
-        .expect(400);
+      return request(app.getHttpServer()).post('/auth/login').send({}).expect(400);
     });
   });
 
@@ -71,9 +68,7 @@ describe('Auth (e2e)', () => {
     it('should return 401 without auth token', async () => {
       if (!app) return;
 
-      return request(app.getHttpServer())
-        .get('/auth/me')
-        .expect(401);
+      return request(app.getHttpServer()).get('/auth/me').expect(401);
     });
 
     it('should return 401 with invalid token', async () => {
@@ -101,9 +96,7 @@ describe('Auth (e2e)', () => {
     it('should return 401 without auth token', async () => {
       if (!app) return;
 
-      return request(app.getHttpServer())
-        .post('/auth/logout')
-        .expect(401);
+      return request(app.getHttpServer()).post('/auth/logout').expect(401);
     });
   });
 

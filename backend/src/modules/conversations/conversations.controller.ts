@@ -13,7 +13,12 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
-import { ConversationExtrasService, CreateNoteDto, UpdateLabelsDto, AddLabelDto } from './conversation-extras.service';
+import {
+  ConversationExtrasService,
+  CreateNoteDto,
+  UpdateLabelsDto,
+  AddLabelDto,
+} from './conversation-extras.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -36,10 +41,7 @@ export class ConversationsController {
 
   @Get()
   @Roles('VIEW_ONLY')
-  async findAll(
-    @WorkspaceId() workspaceId: string,
-    @Query() query: ConversationListQueryDto,
-  ) {
+  async findAll(@WorkspaceId() workspaceId: string, @Query() query: ConversationListQueryDto) {
     return this.conversationsService.findAll(workspaceId, query);
   }
 
@@ -60,19 +62,13 @@ export class ConversationsController {
 
   @Get(':id')
   @Roles('VIEW_ONLY')
-  async findById(
-    @WorkspaceId() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async findById(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     return this.conversationsService.findById(workspaceId, id);
   }
 
   @Post()
   @Roles('OPERATOR')
-  async create(
-    @WorkspaceId() workspaceId: string,
-    @Body() dto: CreateConversationDto,
-  ) {
+  async create(@WorkspaceId() workspaceId: string, @Body() dto: CreateConversationDto) {
     return this.conversationsService.create(workspaceId, dto);
   }
 
@@ -99,29 +95,20 @@ export class ConversationsController {
   @Post(':id/unassign')
   @Roles('MANAGER')
   @HttpCode(HttpStatus.OK)
-  async unassign(
-    @WorkspaceId() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async unassign(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     return this.conversationsService.unassign(workspaceId, id);
   }
 
   @Post(':id/read')
   @Roles('VIEW_ONLY')
   @HttpCode(HttpStatus.OK)
-  async markAsRead(
-    @WorkspaceId() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async markAsRead(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     return this.conversationsService.markAsRead(workspaceId, id);
   }
 
   @Post('bulk')
   @Roles('MANAGER')
-  async bulkUpdate(
-    @WorkspaceId() workspaceId: string,
-    @Body() dto: BulkUpdateConversationsDto,
-  ) {
+  async bulkUpdate(@WorkspaceId() workspaceId: string, @Body() dto: BulkUpdateConversationsDto) {
     return this.conversationsService.bulkUpdate(workspaceId, dto);
   }
 
@@ -131,10 +118,7 @@ export class ConversationsController {
 
   @Get(':id/notes')
   @Roles('VIEW_ONLY')
-  async getNotes(
-    @WorkspaceId() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async getNotes(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     return this.extrasService.getNotes(workspaceId, id);
   }
 
@@ -146,9 +130,8 @@ export class ConversationsController {
     @Body() dto: CreateNoteDto,
     @Request() req: { user: { id: string; role?: string } },
   ) {
-    const createdBy = req.user.role === 'ADMIN'
-      ? { adminId: req.user.id }
-      : { userId: req.user.id };
+    const createdBy =
+      req.user.role === 'ADMIN' ? { adminId: req.user.id } : { userId: req.user.id };
     return this.extrasService.createNote(workspaceId, id, dto.content, createdBy);
   }
 
@@ -175,10 +158,7 @@ export class ConversationsController {
 
   @Get(':id/labels')
   @Roles('VIEW_ONLY')
-  async getLabels(
-    @WorkspaceId() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async getLabels(@WorkspaceId() workspaceId: string, @Param('id') id: string) {
     return this.extrasService.getLabels(workspaceId, id);
   }
 

@@ -100,7 +100,15 @@ describe('FacebookService', () => {
         { provide: FacebookApiService, useValue: mockFbApiService },
         { provide: FacebookConfigService, useValue: mockFbConfigService },
         { provide: ConfigService, useValue: mockConfigService },
-        { provide: EncryptionService, useValue: { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v), encryptIfNeeded: jest.fn((v) => v), decryptIfNeeded: jest.fn((v) => v) } },
+        {
+          provide: EncryptionService,
+          useValue: {
+            encrypt: jest.fn((v) => v),
+            decrypt: jest.fn((v) => v),
+            encryptIfNeeded: jest.fn((v) => v),
+            decryptIfNeeded: jest.fn((v) => v),
+          },
+        },
       ],
     }).compile();
 
@@ -121,10 +129,7 @@ describe('FacebookService', () => {
       mockPrismaService.facebookAccount.findFirst.mockResolvedValue(null);
       mockRedisService.set.mockResolvedValue(true);
 
-      const result = await service.initiateOAuth(
-        { workspaceId: 'workspace-1' },
-        'user-1'
-      );
+      const result = await service.initiateOAuth({ workspaceId: 'workspace-1' }, 'user-1');
 
       expect(result).toBe('https://facebook.com/oauth');
       expect(mockRedisService.set).toHaveBeenCalled();
@@ -133,18 +138,18 @@ describe('FacebookService', () => {
     it('should throw error if workspace not found', async () => {
       mockPrismaService.workspace.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.initiateOAuth({ workspaceId: 'invalid' }, 'user-1')
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.initiateOAuth({ workspaceId: 'invalid' }, 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw error if workspace already has Facebook account', async () => {
       mockPrismaService.workspace.findUnique.mockResolvedValue(mockWorkspace);
       mockPrismaService.facebookAccount.findFirst.mockResolvedValue(mockFacebookAccount);
 
-      await expect(
-        service.initiateOAuth({ workspaceId: 'workspace-1' }, 'user-1')
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.initiateOAuth({ workspaceId: 'workspace-1' }, 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -169,9 +174,7 @@ describe('FacebookService', () => {
         name: 'Test User',
         email: 'test@example.com',
       });
-      mockFbApiService.getUserPages.mockResolvedValue([
-        { id: 'page-1', name: 'Page 1' },
-      ]);
+      mockFbApiService.getUserPages.mockResolvedValue([{ id: 'page-1', name: 'Page 1' }]);
       mockPrismaService.facebookAccount.create.mockResolvedValue({
         id: 'fb-account-1',
         facebookUserId: 'fb-user-123',
@@ -187,9 +190,9 @@ describe('FacebookService', () => {
     it('should throw error for invalid state', async () => {
       mockRedisService.get.mockResolvedValue(null);
 
-      await expect(
-        service.handleCallback('auth-code', 'invalid-state')
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.handleCallback('auth-code', 'invalid-state')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -200,9 +203,7 @@ describe('FacebookService', () => {
         { id: 'page-1', name: 'Page 1', category: 'Business' },
         { id: 'page-2', name: 'Page 2', category: 'Brand' },
       ]);
-      mockPrismaService.page.findMany.mockResolvedValue([
-        { fbPageId: 'page-1' },
-      ]);
+      mockPrismaService.page.findMany.mockResolvedValue([{ fbPageId: 'page-1' }]);
 
       const result = await service.getAvailablePages('fb-account-1');
 
@@ -214,9 +215,7 @@ describe('FacebookService', () => {
     it('should throw error if account not found', async () => {
       mockPrismaService.facebookAccount.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.getAvailablePages('invalid-id')
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getAvailablePages('invalid-id')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -256,7 +255,7 @@ describe('FacebookService', () => {
           facebookAccountId: 'fb-account-1',
           pageId: 'fb-page-123',
           pageName: 'Test Page',
-        })
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -275,9 +274,9 @@ describe('FacebookService', () => {
     it('should throw error if page not found', async () => {
       mockPrismaService.page.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.disconnectPage('workspace-1', 'invalid-page')
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.disconnectPage('workspace-1', 'invalid-page')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -325,9 +324,7 @@ describe('FacebookService', () => {
       mockPrismaService.facebookAccount.findUnique.mockResolvedValue(mockFacebookAccount);
       mockFbApiService.debugToken.mockResolvedValue({ is_valid: false });
 
-      await expect(
-        service.refreshToken('fb-account-1')
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.refreshToken('fb-account-1')).rejects.toThrow(BadRequestException);
     });
   });
 });

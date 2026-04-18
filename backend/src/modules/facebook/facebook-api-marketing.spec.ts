@@ -21,10 +21,7 @@ describe('FacebookApiService - Marketing API', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        FacebookApiService,
-        { provide: FacebookConfigService, useValue: mockFbConfig },
-      ],
+      providers: [FacebookApiService, { provide: FacebookConfigService, useValue: mockFbConfig }],
     }).compile();
 
     service = module.get<FacebookApiService>(FacebookApiService);
@@ -92,9 +89,10 @@ describe('FacebookApiService - Marketing API', () => {
 
     it('should throw on campaign creation error', async () => {
       fetchSpy.mockResolvedValueOnce({
-        json: () => Promise.resolve({
-          error: { message: 'Invalid ad account' },
-        }),
+        json: () =>
+          Promise.resolve({
+            error: { message: 'Invalid ad account' },
+          }),
       } as Response);
 
       await expect(
@@ -135,9 +133,7 @@ describe('FacebookApiService - Marketing API', () => {
         json: () => Promise.resolve({ success: true }),
       } as Response);
 
-      const result = await service.updateSponsoredCampaignStatus(
-        'camp-123', 'token', 'ACTIVE',
-      );
+      const result = await service.updateSponsoredCampaignStatus('camp-123', 'token', 'ACTIVE');
 
       expect(result).toBe(true);
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -151,9 +147,7 @@ describe('FacebookApiService - Marketing API', () => {
         json: () => Promise.resolve({ error: { message: 'Forbidden' } }),
       } as Response);
 
-      const result = await service.updateSponsoredCampaignStatus(
-        'camp-123', 'token', 'ACTIVE',
-      );
+      const result = await service.updateSponsoredCampaignStatus('camp-123', 'token', 'ACTIVE');
 
       expect(result).toBe(false);
     });
@@ -162,18 +156,19 @@ describe('FacebookApiService - Marketing API', () => {
   describe('getSponsoredCampaignInsights', () => {
     it('should return parsed insights', async () => {
       fetchSpy.mockResolvedValue({
-        json: () => Promise.resolve({
-          data: [{
-            impressions: '5000',
-            reach: '3000',
-            spend: '15.50',
-            clicks: '200',
-            ctr: '4.0',
-            actions: [
-              { action_type: 'onsite_conversion.messaging_first_reply', value: '50' },
+        json: () =>
+          Promise.resolve({
+            data: [
+              {
+                impressions: '5000',
+                reach: '3000',
+                spend: '15.50',
+                clicks: '200',
+                ctr: '4.0',
+                actions: [{ action_type: 'onsite_conversion.messaging_first_reply', value: '50' }],
+              },
             ],
-          }],
-        }),
+          }),
       } as Response);
 
       const insights = await service.getSponsoredCampaignInsights('camp-123', 'token');

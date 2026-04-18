@@ -55,7 +55,7 @@ export enum FilterField {
   SOURCE = 'source',
   IS_BLOCKED = 'isBlocked',
   IS_SUBSCRIBED = 'isSubscribed',
-  
+
   // Engagement Fields
   TOTAL_MESSAGES_SENT = 'totalMessagesSent',
   TOTAL_MESSAGES_RECEIVED = 'totalMessagesReceived',
@@ -63,17 +63,17 @@ export enum FilterField {
   LAST_MESSAGE_TO_CONTACT_AT = 'lastMessageToContactAt',
   FIRST_INTERACTION_AT = 'firstInteractionAt',
   LAST_INTERACTION_AT = 'lastInteractionAt',
-  
+
   // Tag Fields
   HAS_TAG = 'hasTag',
   DOES_NOT_HAVE_TAG = 'doesNotHaveTag',
-  
+
   // Page Fields
   PAGE_ID = 'pageId',
-  
+
   // Custom Field
   CUSTOM_FIELD = 'customField',
-  
+
   // 24-Hour Window
   IS_WITHIN_24H_WINDOW = 'isWithin24HWindow',
 }

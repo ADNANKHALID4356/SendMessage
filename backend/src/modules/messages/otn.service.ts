@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FacebookApiService } from '../facebook/facebook-api.service';
 import { EncryptionService } from '../../common/encryption.service';
@@ -185,7 +180,6 @@ export class OtnService {
         success: true,
         messageId: message.id,
       };
-
     } catch (error) {
       this.logger.error('Failed to send OTN request:', error);
       return {
@@ -269,7 +263,6 @@ export class OtnService {
       }
 
       this.logger.log(`OTN opt-in recorded for contact ${contact.id}`);
-
     } catch (error) {
       this.logger.error('Failed to handle OTN opt-in:', error);
     }
@@ -418,7 +411,6 @@ export class OtnService {
         messageId: message.id,
         fbMessageId: fbResponse.message_id,
       };
-
     } catch (error) {
       this.logger.error('Failed to use OTN token:', error);
       return {
@@ -442,15 +434,12 @@ export class OtnService {
         pageId,
         isUsed: false,
         token: { not: '' }, // Must have opted in
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: new Date() } },
-        ],
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
       orderBy: { optedInAt: 'desc' },
     });
 
-    return tokens.map(t => ({
+    return tokens.map((t) => ({
       id: t.id,
       token: t.token,
       title: t.title || '',
@@ -471,10 +460,7 @@ export class OtnService {
         pageId,
         isUsed: false,
         token: { not: '' },
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: new Date() } },
-        ],
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
     });
   }

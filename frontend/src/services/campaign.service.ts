@@ -4,36 +4,49 @@ import api, { PaginatedResponse } from '@/lib/api-client';
 // Types
 // ===========================================
 
-export type CampaignType = 'broadcast' | 'otn' | 'recurring';
-export type CampaignStatus = 'draft' | 'scheduled' | 'running' | 'paused' | 'completed' | 'failed';
+// Aligned with backend DTOs
+export type CampaignType = 'ONE_TIME' | 'SCHEDULED' | 'RECURRING' | 'DRIP';
+export type CampaignStatus = 'DRAFT' | 'SCHEDULED' | 'RUNNING' | 'PAUSED' | 'COMPLETED' | 'FAILED';
+export type AudienceType = 'ALL' | 'SEGMENT' | 'PAGES' | 'MANUAL';
+export type BypassMethod = 'NONE' | 'ONE_TIME_NOTIFY' | 'RECURRING_NOTIFY' | 'MESSAGE_TAG' | 'SPONSORED_MESSAGE';
+export type MessageTag = 'CONFIRMED_EVENT_UPDATE' | 'POST_PURCHASE_UPDATE' | 'ACCOUNT_UPDATE' | 'HUMAN_AGENT';
+
+export interface MessageContent {
+  text?: string;
+  attachmentUrl?: string;
+  attachmentType?: 'image' | 'video' | 'audio' | 'file';
+  quickReplies?: Array<{
+    content_type: 'text';
+    title: string;
+    payload: string;
+  }>;
+  template?: {
+    id: string;
+    params?: Record<string, string>;
+  };
+}
 
 export interface Campaign {
   id: string;
   name: string;
-  description: string;
-  type: CampaignType;
+  description: string | null;
+  campaignType: CampaignType;
   status: CampaignStatus;
-  workspaceId: string;
-  segmentId?: string;
-  segment?: {
-    id: string;
-    name: string;
-    contactCount: number;
-  };
-  message: {
-    type: string;
-    content: string;
-    attachments?: Array<{ type: string; url: string }>;
-  };
-  targetCount: number;
+  audienceType: AudienceType;
+  messageContent: any;
+  bypassMethod: BypassMethod | null;
+  messageTag: MessageTag | null;
+  scheduledAt: string | null;
+  timezone: string;
+  totalRecipients: number;
   sentCount: number;
   deliveredCount: number;
-  readCount: number;
   failedCount: number;
-  scheduledAt?: string;
-  startedAt?: string;
-  completedAt?: string;
-  createdById: string;
+  openedCount: number;
+  clickedCount: number;
+  repliedCount: number;
+  startedAt: string | null;
+  completedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -44,44 +57,40 @@ export interface CampaignListParams {
   status?: CampaignStatus;
   type?: CampaignType;
   search?: string;
-  sortBy?: 'createdAt' | 'scheduledAt' | 'name';
+  sortBy?: 'createdAt' | 'name' | 'scheduledAt' | 'sentCount';
   sortOrder?: 'asc' | 'desc';
 }
 
 export interface CreateCampaignRequest {
   name: string;
   description?: string;
-  type: CampaignType;
-  segmentId?: string;
-  contactIds?: string[];
-  message: {
-    type: string;
-    content: string;
-    attachments?: Array<{ type: string; url: string }>;
-  };
+  campaignType: CampaignType;
+  audienceType: AudienceType;
+  audienceSegmentId?: string;
+  audiencePageIds?: string[];
+  audienceContactIds?: string[];
+  messageContent: MessageContent;
+  bypassMethod?: BypassMethod;
+  messageTag?: MessageTag;
   scheduledAt?: string;
-  settings?: {
-    sendRate?: number;
-    retryFailed?: boolean;
-    trackDelivery?: boolean;
-  };
+  timezone?: string;
+  // Extensibility limits for DRIP matching DTO
+  // recurringPattern?: RecurringPattern;
+  // dripSequence?: DripStep[];
 }
 
 export interface UpdateCampaignRequest {
   name?: string;
   description?: string;
-  segmentId?: string;
-  message?: {
-    type: string;
-    content: string;
-    attachments?: Array<{ type: string; url: string }>;
-  };
+  messageContent?: MessageContent;
+  audienceType?: AudienceType;
+  audienceSegmentId?: string;
+  audiencePageIds?: string[];
+  audienceContactIds?: string[];
+  bypassMethod?: BypassMethod;
+  messageTag?: MessageTag;
   scheduledAt?: string;
-  settings?: {
-    sendRate?: number;
-    retryFailed?: boolean;
-    trackDelivery?: boolean;
-  };
+  timezone?: string;
 }
 
 export interface CampaignStats {

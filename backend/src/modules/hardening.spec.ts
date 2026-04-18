@@ -57,15 +57,27 @@ describe('Phase 3 — Hardening', () => {
 
     it('AuthController adminLogin should have @Throttle() with 10 requests/60s', () => {
       // @Throttle stores each field with key THROTTLER:<FIELD><name>
-      const limitMeta = Reflect.getMetadata('THROTTLER:LIMITdefault', AuthController.prototype.adminLogin);
-      const ttlMeta = Reflect.getMetadata('THROTTLER:TTLdefault', AuthController.prototype.adminLogin);
+      const limitMeta = Reflect.getMetadata(
+        'THROTTLER:LIMITdefault',
+        AuthController.prototype.adminLogin,
+      );
+      const ttlMeta = Reflect.getMetadata(
+        'THROTTLER:TTLdefault',
+        AuthController.prototype.adminLogin,
+      );
       expect(limitMeta).toBe(10);
       expect(ttlMeta).toBe(60000);
     });
 
     it('AuthController userLogin should have @Throttle() with 10 requests/60s', () => {
-      const limitMeta = Reflect.getMetadata('THROTTLER:LIMITdefault', AuthController.prototype.userLogin);
-      const ttlMeta = Reflect.getMetadata('THROTTLER:TTLdefault', AuthController.prototype.userLogin);
+      const limitMeta = Reflect.getMetadata(
+        'THROTTLER:LIMITdefault',
+        AuthController.prototype.userLogin,
+      );
+      const ttlMeta = Reflect.getMetadata(
+        'THROTTLER:TTLdefault',
+        AuthController.prototype.userLogin,
+      );
       expect(limitMeta).toBe(10);
       expect(ttlMeta).toBe(60000);
     });

@@ -60,7 +60,9 @@ export class WebhooksController {
     @Headers('x-hub-signature-256') signature: string,
     @Body() payload: WebhookPayloadDto,
   ): Promise<string> {
-    this.logger.log(`Webhook event received: ${payload.object}, entries: ${payload.entry?.length || 0}`);
+    this.logger.log(
+      `Webhook event received: ${payload.object}, entries: ${payload.entry?.length || 0}`,
+    );
 
     // Verify signature
     const rawBody = req.rawBody?.toString() || JSON.stringify(payload);
@@ -90,14 +92,16 @@ export class WebhooksController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiExcludeEndpoint()
-  async testWebhook(@Body() payload: WebhookPayloadDto): Promise<{ success: boolean; message: string }> {
+  async testWebhook(
+    @Body() payload: WebhookPayloadDto,
+  ): Promise<{ success: boolean; message: string }> {
     // Only available in development
     if (process.env.NODE_ENV === 'production') {
       throw new UnauthorizedException('Test endpoint not available in production');
     }
 
     this.logger.log('Test webhook received');
-    
+
     try {
       await this.webhooksService.processWebhook(payload);
       return { success: true, message: 'Test webhook processed' };

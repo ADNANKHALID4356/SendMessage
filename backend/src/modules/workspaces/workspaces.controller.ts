@@ -62,7 +62,7 @@ export class WorkspacesController {
   @ApiResponse({ status: 404, description: 'Workspace not found' })
   async findById(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { userId: string; isAdmin: boolean }
+    @CurrentUser() user: { userId: string; isAdmin: boolean },
   ) {
     // Admin has access to all workspaces; non-admins need explicit access
     if (!user.isAdmin) {
@@ -80,7 +80,7 @@ export class WorkspacesController {
   @ApiResponse({ status: 200, description: 'Workspace statistics' })
   async getStats(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { userId: string; isAdmin: boolean }
+    @CurrentUser() user: { userId: string; isAdmin: boolean },
   ) {
     if (!user.isAdmin) {
       const hasAccess = await this.workspacesService.checkUserAccess(id, user.userId);
@@ -100,7 +100,7 @@ export class WorkspacesController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateWorkspaceDto,
-    @CurrentUser() user: { userId: string; isAdmin: boolean }
+    @CurrentUser() user: { userId: string; isAdmin: boolean },
   ) {
     if (!user.isAdmin) {
       const hasAccess = await this.workspacesService.checkUserAccess(id, user.userId, 'MANAGER');
@@ -142,7 +142,7 @@ export class WorkspacesController {
   async assignUser(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssignUserDto,
-    @CurrentUser() user: { userId: string; isAdmin: boolean }
+    @CurrentUser() user: { userId: string; isAdmin: boolean },
   ) {
     if (!user.isAdmin) {
       const hasAccess = await this.workspacesService.checkUserAccess(id, user.userId, 'MANAGER');
@@ -164,7 +164,7 @@ export class WorkspacesController {
   async removeUser(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('userId', ParseUUIDPipe) userId: string,
-    @CurrentUser() user: { userId: string; isAdmin: boolean }
+    @CurrentUser() user: { userId: string; isAdmin: boolean },
   ) {
     if (!user.isAdmin) {
       const hasAccess = await this.workspacesService.checkUserAccess(id, user.userId, 'MANAGER');
@@ -210,16 +210,17 @@ export class WorkspacesController {
       body.role as any,
       user.userId,
     );
-    return { ...invite, email: body.email, message: 'Invitation created (send email via admin/email/invite endpoint)' };
+    return {
+      ...invite,
+      email: body.email,
+      message: 'Invitation created (send email via admin/email/invite endpoint)',
+    };
   }
 
   @Post('invite/accept')
   @ApiOperation({ summary: 'Accept a workspace invitation' })
   @ApiResponse({ status: 200, description: 'Invitation accepted' })
-  async acceptInvite(
-    @Body() body: { token: string },
-    @CurrentUser() user: { userId: string },
-  ) {
+  async acceptInvite(@Body() body: { token: string }, @CurrentUser() user: { userId: string }) {
     return this.workspacesService.acceptInvite(body.token, user.userId);
   }
 

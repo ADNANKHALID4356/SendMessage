@@ -42,7 +42,9 @@ export class BackupService {
   // ===========================================
 
   private async getRegistry(): Promise<BackupRecord[]> {
-    const setting = await this.prisma.systemSetting.findUnique({ where: { key: 'backup_registry' } });
+    const setting = await this.prisma.systemSetting.findUnique({
+      where: { key: 'backup_registry' },
+    });
     return setting ? (setting.value as unknown as BackupRecord[]) : [];
   }
 
@@ -78,15 +80,21 @@ export class BackupService {
 
     try {
       // Collect record counts
-      const [contactCount, conversationCount, messageCount, campaignCount, pageCount, segmentCount] =
-        await Promise.all([
-          this.prisma.contact.count({ where: { workspaceId } }),
-          this.prisma.conversation.count({ where: { workspaceId } }),
-          this.prisma.message.count({ where: { page: { workspaceId } } }),
-          this.prisma.campaign.count({ where: { workspaceId } }),
-          this.prisma.page.count({ where: { workspaceId } }),
-          this.prisma.segment.count({ where: { workspaceId } }),
-        ]);
+      const [
+        contactCount,
+        conversationCount,
+        messageCount,
+        campaignCount,
+        pageCount,
+        segmentCount,
+      ] = await Promise.all([
+        this.prisma.contact.count({ where: { workspaceId } }),
+        this.prisma.conversation.count({ where: { workspaceId } }),
+        this.prisma.message.count({ where: { page: { workspaceId } } }),
+        this.prisma.campaign.count({ where: { workspaceId } }),
+        this.prisma.page.count({ where: { workspaceId } }),
+        this.prisma.segment.count({ where: { workspaceId } }),
+      ]);
 
       backup.recordCounts = {
         contacts: contactCount,
@@ -110,7 +118,9 @@ export class BackupService {
         if (dbUrl) {
           const sqlFilename = `backup_${workspaceId}_${timestamp}.sql`;
           const sqlPath = path.join(this.backupDir, sqlFilename);
-          execSync(`pg_dump "${dbUrl}" --no-owner --no-privileges -f "${sqlPath}"`, { timeout: 120000 });
+          execSync(`pg_dump "${dbUrl}" --no-owner --no-privileges -f "${sqlPath}"`, {
+            timeout: 120000,
+          });
           if (fs.existsSync(sqlPath)) {
             const sqlSize = fs.statSync(sqlPath).size;
             backup.sizeBytes += sqlSize;
@@ -123,7 +133,9 @@ export class BackupService {
 
       backup.status = 'completed';
       const totalRecords = Object.values(backup.recordCounts).reduce((a, b) => a + b, 0);
-      this.logger.log(`Backup created: ${backupId} (${totalRecords} records, ${backup.sizeBytes} bytes)`);
+      this.logger.log(
+        `Backup created: ${backupId} (${totalRecords} records, ${backup.sizeBytes} bytes)`,
+      );
     } catch (error: any) {
       backup.status = 'failed';
       backup.error = error.message;
@@ -145,7 +157,7 @@ export class BackupService {
 
   async restoreBackup(backupId: string): Promise<{ success: boolean; error?: string }> {
     const registry = await this.getRegistry();
-    const backup = registry.find(b => b.id === backupId);
+    const backup = registry.find((b) => b.id === backupId);
     if (!backup) return { success: false, error: 'Backup not found' };
     if (!backup.filePath || !fs.existsSync(backup.filePath)) {
       return { success: false, error: 'Backup file not found on disk' };
@@ -161,8 +173,12 @@ export class BackupService {
           await this.prisma.contact.upsert({
             where: { pageId_psid: { pageId: c.pageId, psid: c.psid } },
             create: {
-              workspaceId: c.workspaceId, pageId: c.pageId, psid: c.psid,
-              firstName: c.firstName, lastName: c.lastName, fullName: c.fullName,
+              workspaceId: c.workspaceId,
+              pageId: c.pageId,
+              psid: c.psid,
+              firstName: c.firstName,
+              lastName: c.lastName,
+              fullName: c.fullName,
               customFields: c.customFields || {},
             },
             update: { firstName: c.firstName, lastName: c.lastName, fullName: c.fullName },
@@ -184,18 +200,18 @@ export class BackupService {
   async listBackups(workspaceId: string): Promise<BackupRecord[]> {
     const registry = await this.getRegistry();
     return registry
-      .filter(b => b.workspaceId === workspaceId)
+      .filter((b) => b.workspaceId === workspaceId)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   async getBackup(backupId: string): Promise<BackupRecord | null> {
     const registry = await this.getRegistry();
-    return registry.find(b => b.id === backupId) || null;
+    return registry.find((b) => b.id === backupId) || null;
   }
 
   async deleteBackup(backupId: string): Promise<{ success: boolean }> {
     const registry = await this.getRegistry();
-    const idx = registry.findIndex(b => b.id === backupId);
+    const idx = registry.findIndex((b) => b.id === backupId);
     if (idx === -1) return { success: false };
 
     const backup = registry[idx];
@@ -246,9 +262,9 @@ export class BackupService {
 
     return {
       workspace,
-      contacts: contacts.map(c => ({
+      contacts: contacts.map((c) => ({
         ...c,
-        tags: c.tags.map(t => t.tag.name),
+        tags: c.tags.map((t) => t.tag.name),
       })),
       campaigns,
       segments,
@@ -279,7 +295,9 @@ export class BackupService {
           succeeded++;
         } catch (error: any) {
           failed++;
-          this.logger.error(`Scheduled backup failed for workspace ${workspace.name}: ${error.message}`);
+          this.logger.error(
+            `Scheduled backup failed for workspace ${workspace.name}: ${error.message}`,
+          );
         }
       }
 
@@ -303,7 +321,7 @@ export class BackupService {
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
     const registry = await this.getRegistry();
-    const toDelete = registry.filter(b => new Date(b.createdAt) < cutoffDate);
+    const toDelete = registry.filter((b) => new Date(b.createdAt) < cutoffDate);
 
     for (const backup of toDelete) {
       try {
@@ -324,7 +342,7 @@ export class BackupService {
     }
 
     if (toDelete.length > 0) {
-      const remaining = registry.filter(b => new Date(b.createdAt) >= cutoffDate);
+      const remaining = registry.filter((b) => new Date(b.createdAt) >= cutoffDate);
       await this.saveRegistry(remaining);
       this.logger.log(`Cleaned up ${toDelete.length} backups older than ${retentionDays} days`);
     }

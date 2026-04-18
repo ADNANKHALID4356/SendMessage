@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateSegmentDto,
@@ -39,17 +34,17 @@ export class SegmentsService {
   /**
    * Create a new segment
    */
-  async create(
-    workspaceId: string,
-    dto: CreateSegmentDto,
-  ): Promise<SegmentResponse> {
+  async create(workspaceId: string, dto: CreateSegmentDto): Promise<SegmentResponse> {
     // Validate filters for dynamic segments
     if (dto.segmentType === SegmentType.DYNAMIC && !dto.filters) {
       throw new BadRequestException('Filters are required for dynamic segments');
     }
 
     // Validate contact IDs for static segments
-    if (dto.segmentType === SegmentType.STATIC && (!dto.contactIds || dto.contactIds.length === 0)) {
+    if (
+      dto.segmentType === SegmentType.STATIC &&
+      (!dto.contactIds || dto.contactIds.length === 0)
+    ) {
       // Allow empty static segments that will be populated later
     }
 
@@ -60,7 +55,7 @@ export class SegmentsService {
         name: dto.name,
         description: dto.description,
         segmentType: dto.segmentType,
-        filters: dto.filters as any || {},
+        filters: (dto.filters as any) || {},
         contactCount: 0,
       },
     });
@@ -102,10 +97,7 @@ export class SegmentsService {
   /**
    * List segments with filtering and pagination
    */
-  async findAll(
-    workspaceId: string,
-    query: SegmentListQueryDto,
-  ): Promise<SegmentListResponse> {
+  async findAll(workspaceId: string, query: SegmentListQueryDto): Promise<SegmentListResponse> {
     const { page = 1, limit = 20, type, search, sortBy, sortOrder } = query;
 
     const where: Prisma.SegmentWhereInput = { workspaceId };
@@ -132,7 +124,7 @@ export class SegmentsService {
     ]);
 
     return {
-      data: segments.map(s => this.formatSegmentResponse(s)),
+      data: segments.map((s) => this.formatSegmentResponse(s)),
       pagination: {
         page,
         limit,
@@ -216,11 +208,7 @@ export class SegmentsService {
   /**
    * Get contacts in a segment
    */
-  async getContacts(
-    workspaceId: string,
-    segmentId: string,
-    query: SegmentContactsQueryDto,
-  ) {
+  async getContacts(workspaceId: string, segmentId: string, query: SegmentContactsQueryDto) {
     const segment = await this.prisma.segment.findFirst({
       where: { id: segmentId, workspaceId },
     });
@@ -306,7 +294,7 @@ export class SegmentsService {
     ]);
 
     return {
-      data: segmentContacts.map(sc => sc.contact),
+      data: segmentContacts.map((sc) => sc.contact),
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -376,10 +364,7 @@ export class SegmentsService {
   /**
    * Preview segment results without saving
    */
-  async preview(
-    workspaceId: string,
-    filters: SegmentFiltersDto,
-  ): Promise<SegmentPreviewResponse> {
+  async preview(workspaceId: string, filters: SegmentFiltersDto): Promise<SegmentPreviewResponse> {
     const filterWhere = this.buildFilterQuery(workspaceId, filters);
 
     const [totalContacts, sampleContacts] = await Promise.all([
@@ -397,7 +382,7 @@ export class SegmentsService {
 
     return {
       totalContacts,
-      sampleContacts: sampleContacts.map(c => ({
+      sampleContacts: sampleContacts.map((c) => ({
         id: c.id,
         fullName: c.fullName,
         email: null,
@@ -470,7 +455,7 @@ export class SegmentsService {
       return baseWhere;
     }
 
-    const groupConditions = filters.groups.map(group => this.buildGroupQuery(group));
+    const groupConditions = filters.groups.map((group) => this.buildGroupQuery(group));
 
     if (filters.logic === FilterLogic.OR) {
       return { ...baseWhere, OR: groupConditions };
@@ -480,11 +465,11 @@ export class SegmentsService {
   }
 
   private buildGroupQuery(group: FilterGroupDto): Prisma.ContactWhereInput {
-    const conditions = group.conditions.map(c => this.buildConditionQuery(c));
+    const conditions = group.conditions.map((c) => this.buildConditionQuery(c));
 
     // Add nested sub-group conditions
     if (group.nestedGroups?.length) {
-      const nestedConditions = group.nestedGroups.map(ng => this.buildGroupQuery(ng));
+      const nestedConditions = group.nestedGroups.map((ng) => this.buildGroupQuery(ng));
       conditions.push(...nestedConditions);
     }
 
@@ -510,9 +495,10 @@ export class SegmentsService {
     switch (field) {
       case FilterField.IS_WITHIN_24H_WINDOW:
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        result = operator === FilterOperator.IS_TRUE
-          ? { lastMessageFromContactAt: { gte: twentyFourHoursAgo } }
-          : { lastMessageFromContactAt: { lt: twentyFourHoursAgo } };
+        result =
+          operator === FilterOperator.IS_TRUE
+            ? { lastMessageFromContactAt: { gte: twentyFourHoursAgo } }
+            : { lastMessageFromContactAt: { lt: twentyFourHoursAgo } };
         break;
 
       case FilterField.HAS_TAG:
@@ -603,25 +589,22 @@ export class SegmentsService {
   // Helpers
   // ===========================================
 
-  private async addContactsToSegment(
-    segmentId: string,
-    contactIds: string[],
-  ): Promise<number> {
+  private async addContactsToSegment(segmentId: string, contactIds: string[]): Promise<number> {
     // Get existing contacts in segment
     const existing = await this.prisma.segmentContact.findMany({
       where: { segmentId, contactId: { in: contactIds } },
       select: { contactId: true },
     });
-    const existingIds = new Set(existing.map(e => e.contactId));
+    const existingIds = new Set(existing.map((e) => e.contactId));
 
     // Filter out already existing
-    const newIds = contactIds.filter(id => !existingIds.has(id));
+    const newIds = contactIds.filter((id) => !existingIds.has(id));
 
     if (newIds.length === 0) return 0;
 
     // Add new contacts
     await this.prisma.segmentContact.createMany({
-      data: newIds.map(contactId => ({ segmentId, contactId })),
+      data: newIds.map((contactId) => ({ segmentId, contactId })),
       skipDuplicates: true,
     });
 

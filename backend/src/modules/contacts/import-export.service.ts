@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // ===========================================
@@ -37,8 +33,15 @@ export interface FieldMapping {
 
 // Known standard fields
 const STANDARD_FIELDS = new Set([
-  'psid', 'firstName', 'lastName', 'gender', 'locale',
-  'timezone', 'source', 'notes', 'tags',
+  'psid',
+  'firstName',
+  'lastName',
+  'gender',
+  'locale',
+  'timezone',
+  'source',
+  'notes',
+  'tags',
 ]);
 
 @Injectable()
@@ -78,10 +81,7 @@ export class ImportExportService {
   /**
    * Apply field mappings to raw CSV rows
    */
-  applyFieldMappings(
-    rows: Record<string, string>[],
-    mappings: FieldMapping[],
-  ): ImportContactRow[] {
+  applyFieldMappings(rows: Record<string, string>[], mappings: FieldMapping[]): ImportContactRow[] {
     return rows.map((row) => {
       const mapped: Record<string, unknown> = {};
       for (const m of mappings) {
@@ -200,7 +200,10 @@ export class ImportExportService {
 
         // Handle tags
         if (row.tags) {
-          const tagNames = row.tags.split(',').map((t) => t.trim()).filter(Boolean);
+          const tagNames = row.tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean);
           for (const tagName of tagNames) {
             let tag = tagMap.get(tagName.toLowerCase());
             if (!tag) {
@@ -276,10 +279,23 @@ export class ImportExportService {
 
     // CSV headers
     const standardHeaders = [
-      'PSID', 'First Name', 'Last Name', 'Full Name', 'Page',
-      'Engagement Level', 'Engagement Score', 'Subscribed',
-      'Source', 'Gender', 'Locale', 'Timezone', 'Tags', 'Notes',
-      'First Interaction', 'Last Interaction', 'Created At',
+      'PSID',
+      'First Name',
+      'Last Name',
+      'Full Name',
+      'Page',
+      'Engagement Level',
+      'Engagement Score',
+      'Subscribed',
+      'Source',
+      'Gender',
+      'Locale',
+      'Timezone',
+      'Tags',
+      'Notes',
+      'First Interaction',
+      'Last Interaction',
+      'Created At',
     ];
     const customHeaders = customFieldDefs.map((d) => d.fieldName);
     const allHeaders = [...standardHeaders, ...customHeaders];
@@ -314,9 +330,7 @@ export class ImportExportService {
         return val != null ? String(val) : '';
       });
 
-      rows.push(
-        [...standardValues, ...customValues].map((v) => this.escapeCsvField(v)).join(','),
-      );
+      rows.push([...standardValues, ...customValues].map((v) => this.escapeCsvField(v)).join(','));
     }
 
     return rows.join('\n');

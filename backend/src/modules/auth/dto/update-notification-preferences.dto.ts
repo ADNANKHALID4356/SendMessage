@@ -42,13 +42,19 @@ class PushNotificationPrefsDto {
 }
 
 export class UpdateNotificationPreferencesDto {
-  @ApiPropertyOptional({ description: 'Email notification preferences', type: EmailNotificationPrefsDto })
+  @ApiPropertyOptional({
+    description: 'Email notification preferences',
+    type: EmailNotificationPrefsDto,
+  })
   @IsOptional()
   @ValidateNested()
   @Type(() => EmailNotificationPrefsDto)
   email?: EmailNotificationPrefsDto;
 
-  @ApiPropertyOptional({ description: 'Push notification preferences', type: PushNotificationPrefsDto })
+  @ApiPropertyOptional({
+    description: 'Push notification preferences',
+    type: PushNotificationPrefsDto,
+  })
   @IsOptional()
   @ValidateNested()
   @Type(() => PushNotificationPrefsDto)

@@ -43,32 +43,9 @@ export class UsersController {
     return this.usersService.findById(id);
   }
 
-  @Put(':id/workspace-access')
-  @ApiOperation({ summary: 'Update user workspace access' })
-  async updateWorkspaceAccess(
-    @Param('id') userId: string,
-    @Body() body: { workspaceId: string; permissionLevel: string },
-  ) {
-    await this.usersService.updateWorkspaceAccess(userId, body.workspaceId, body.permissionLevel);
-    return { success: true };
-  }
-
-  @Delete(':id/workspace-access/:workspaceId')
-  @ApiOperation({ summary: 'Remove user workspace access' })
-  async removeWorkspaceAccess(
-    @Param('id') userId: string,
-    @Param('workspaceId') workspaceId: string,
-  ) {
-    await this.usersService.removeWorkspaceAccess(userId, workspaceId);
-    return { success: true };
-  }
-
   @Put(':id/reset-password')
   @ApiOperation({ summary: 'Reset user password (admin only)' })
-  async resetPassword(
-    @Param('id') userId: string,
-    @Body() body: { newPassword: string },
-  ) {
+  async resetPassword(@Param('id') userId: string, @Body() body: { newPassword: string }) {
     // Hash password before sending — import bcrypt
     const bcrypt = await import('bcrypt');
     const hash = await bcrypt.hash(body.newPassword, 12);

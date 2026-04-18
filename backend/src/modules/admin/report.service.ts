@@ -81,11 +81,7 @@ export class ReportService {
   // Campaign Summary Report
   // ===========================================
 
-  private async generateCampaignSummary(
-    workspaceId: string,
-    startDate: Date,
-    endDate: Date,
-  ) {
+  private async generateCampaignSummary(workspaceId: string, startDate: Date, endDate: Date) {
     const campaigns = await this.prisma.campaign.findMany({
       where: {
         workspaceId,
@@ -104,7 +100,7 @@ export class ReportService {
       totalFailed: 0,
       avgDeliveryRate: 0,
       avgOpenRate: 0,
-      campaigns: campaigns.map(c => ({
+      campaigns: campaigns.map((c) => ({
         id: c.id,
         name: c.name,
         type: c.campaignType,
@@ -115,9 +111,8 @@ export class ReportService {
         failedCount: c.failedCount,
         openedCount: c.openedCount,
         clickedCount: c.clickedCount,
-        deliveryRate: c.totalRecipients > 0
-          ? Math.round((c.deliveredCount / c.totalRecipients) * 100)
-          : 0,
+        deliveryRate:
+          c.totalRecipients > 0 ? Math.round((c.deliveredCount / c.totalRecipients) * 100) : 0,
         createdAt: c.createdAt.toISOString(),
         completedAt: c.completedAt?.toISOString() || null,
       })),
@@ -132,9 +127,10 @@ export class ReportService {
       summary.totalFailed += c.failedCount;
     }
 
-    summary.avgDeliveryRate = summary.totalRecipients > 0
-      ? Math.round((summary.totalDelivered / summary.totalRecipients) * 100)
-      : 0;
+    summary.avgDeliveryRate =
+      summary.totalRecipients > 0
+        ? Math.round((summary.totalDelivered / summary.totalRecipients) * 100)
+        : 0;
 
     return summary;
   }
@@ -143,11 +139,7 @@ export class ReportService {
   // Contact Growth Report
   // ===========================================
 
-  private async generateContactGrowth(
-    workspaceId: string,
-    startDate: Date,
-    endDate: Date,
-  ) {
+  private async generateContactGrowth(workspaceId: string, startDate: Date, endDate: Date) {
     const contacts = await this.prisma.contact.findMany({
       where: {
         workspaceId,
@@ -194,9 +186,7 @@ export class ReportService {
       totalNewContacts: contacts.length,
       totalContactsBefore: totalBefore,
       totalContactsAfter: totalBefore + contacts.length,
-      growthRate: totalBefore > 0
-        ? Math.round((contacts.length / totalBefore) * 100)
-        : 100,
+      growthRate: totalBefore > 0 ? Math.round((contacts.length / totalBefore) * 100) : 100,
       bySource,
       byEngagement,
       dailyGrowth: cumulativeGrowth,
@@ -207,17 +197,8 @@ export class ReportService {
   // Engagement Report
   // ===========================================
 
-  private async generateEngagementReport(
-    workspaceId: string,
-    startDate: Date,
-    endDate: Date,
-  ) {
-    const [
-      totalMessages,
-      inboundMessages,
-      outboundMessages,
-      conversations,
-    ] = await Promise.all([
+  private async generateEngagementReport(workspaceId: string, startDate: Date, endDate: Date) {
+    const [totalMessages, inboundMessages, outboundMessages, conversations] = await Promise.all([
       this.prisma.message.count({
         where: {
           page: { workspaceId },
@@ -279,23 +260,27 @@ export class ReportService {
       inboundMessages,
       outboundMessages,
       activeContacts,
-      deliveryRate: outboundMessages > 0
-        ? Math.round((deliveredMessages / outboundMessages) * 100)
-        : 0,
-      responseRate: outboundMessages > 0
-        ? Math.round((inboundMessages / outboundMessages) * 100)
-        : 0,
+      deliveryRate:
+        outboundMessages > 0 ? Math.round((deliveredMessages / outboundMessages) * 100) : 0,
+      responseRate:
+        outboundMessages > 0 ? Math.round((inboundMessages / outboundMessages) * 100) : 0,
       conversations: {
         total: conversations.length,
-        byStatus: conversations.reduce((acc, c) => {
-          acc[c.status] = (acc[c.status] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
+        byStatus: conversations.reduce(
+          (acc, c) => {
+            acc[c.status] = (acc[c.status] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
       },
-      bypassMethodUsage: bypassUsage.reduce((acc, b) => {
-        if (b.bypassMethod) acc[b.bypassMethod] = b._count;
-        return acc;
-      }, {} as Record<string, number>),
+      bypassMethodUsage: bypassUsage.reduce(
+        (acc, b) => {
+          if (b.bypassMethod) acc[b.bypassMethod] = b._count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
     };
   }
 
@@ -303,11 +288,7 @@ export class ReportService {
   // Compliance Report
   // ===========================================
 
-  private async generateComplianceReport(
-    workspaceId: string,
-    startDate: Date,
-    endDate: Date,
-  ) {
+  private async generateComplianceReport(workspaceId: string, startDate: Date, endDate: Date) {
     const tagUsage = await this.prisma.message.groupBy({
       by: ['messageTag'],
       where: {
@@ -350,13 +331,14 @@ export class ReportService {
       messagesWithBypassMethod: bypassMessages,
       failedMessages,
       failureRate: totalOutbound > 0 ? Math.round((failedMessages / totalOutbound) * 100) : 0,
-      tagUsage: tagUsage.reduce((acc, t) => {
-        if (t.messageTag) acc[t.messageTag] = t._count;
-        return acc;
-      }, {} as Record<string, number>),
-      bypassPercentage: totalOutbound > 0
-        ? Math.round((bypassMessages / totalOutbound) * 100)
-        : 0,
+      tagUsage: tagUsage.reduce(
+        (acc, t) => {
+          if (t.messageTag) acc[t.messageTag] = t._count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+      bypassPercentage: totalOutbound > 0 ? Math.round((bypassMessages / totalOutbound) * 100) : 0,
     };
   }
 
@@ -375,10 +357,7 @@ export class ReportService {
         doc.on('error', reject);
 
         // Header
-        doc
-          .fontSize(20)
-          .font('Helvetica-Bold')
-          .text('MessageSender Report', { align: 'center' });
+        doc.fontSize(20).font('Helvetica-Bold').text('MessageSender Report', { align: 'center' });
         doc.moveDown(0.5);
         doc
           .fontSize(14)
@@ -392,17 +371,11 @@ export class ReportService {
             `Period: ${report.period.startDate.split('T')[0]} to ${report.period.endDate.split('T')[0]}`,
             { align: 'center' },
           );
-        doc
-          .text(`Generated: ${report.generatedAt.split('T')[0]}`, { align: 'center' });
+        doc.text(`Generated: ${report.generatedAt.split('T')[0]}`, { align: 'center' });
         doc.moveDown(1);
 
         // Divider
-        doc
-          .strokeColor('#cccccc')
-          .lineWidth(1)
-          .moveTo(50, doc.y)
-          .lineTo(545, doc.y)
-          .stroke();
+        doc.strokeColor('#cccccc').lineWidth(1).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
         doc.moveDown(1);
 
         // Summary section
@@ -410,10 +383,7 @@ export class ReportService {
         this.renderPdfSummary(doc, report.data);
 
         // Table section for array data
-        const tableData =
-          report.data.campaigns ||
-          report.data.dailyGrowth ||
-          null;
+        const tableData = report.data.campaigns || report.data.dailyGrowth || null;
         if (Array.isArray(tableData) && tableData.length > 0) {
           doc.moveDown(1);
           this.renderPdfTable(doc, tableData);
@@ -424,10 +394,7 @@ export class ReportService {
         doc
           .fontSize(8)
           .fillColor('#999999')
-          .text(
-            'This report was automatically generated by MessageSender.',
-            { align: 'center' },
-          );
+          .text('This report was automatically generated by MessageSender.', { align: 'center' });
 
         doc.end();
       } catch (err) {
@@ -451,11 +418,9 @@ export class ReportService {
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica');
 
-    const entries = Object.entries(data).filter(
-      ([, v]) => typeof v !== 'object' || v === null,
-    );
+    const entries = Object.entries(data).filter(([, v]) => typeof v !== 'object' || v === null);
     for (const [key, value] of entries) {
-      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
       doc.text(`${label}: ${value ?? 'N/A'}`);
     }
 
@@ -465,7 +430,7 @@ export class ReportService {
     );
     for (const [key, value] of objects) {
       doc.moveDown(0.5);
-      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
       doc.font('Helvetica-Bold').text(label);
       doc.font('Helvetica');
       for (const [k, v] of Object.entries(value as Record<string, any>)) {
@@ -485,7 +450,7 @@ export class ReportService {
     let x = 50;
     doc.fontSize(8).font('Helvetica-Bold');
     for (const h of headers) {
-      const label = h.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+      const label = h.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
       doc.text(label, x, doc.y, { width: colWidth, continued: false });
       x += colWidth;
     }
@@ -539,11 +504,13 @@ export class ReportService {
     const csvRows = [
       headers.join(','),
       ...rows.map((row: any) =>
-        headers.map(h => {
-          const val = row[h];
-          if (val === null || val === undefined) return '';
-          return `"${String(val).replace(/"/g, '""')}"`;
-        }).join(','),
+        headers
+          .map((h) => {
+            const val = row[h];
+            if (val === null || val === undefined) return '';
+            return `"${String(val).replace(/"/g, '""')}"`;
+          })
+          .join(','),
       ),
     ];
 

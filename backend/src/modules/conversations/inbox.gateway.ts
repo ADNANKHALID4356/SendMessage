@@ -23,9 +23,7 @@ interface AuthenticatedSocket extends Socket {
 @WebSocketGateway({
   namespace: '/inbox',
 })
-export class InboxGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+export class InboxGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
@@ -44,7 +42,7 @@ export class InboxGateway
     const frontendUrls = this.config
       .get<string>('FRONTEND_URL', 'http://localhost:3000')
       .split(',')
-      .map(u => u.trim());
+      .map((u) => u.trim());
     if (this.server) {
       (this.server as any).opts = {
         ...(this.server as any).opts,
@@ -178,7 +176,12 @@ export class InboxGateway
   }
 
   /** Notify workspace of message status update */
-  emitMessageStatus(workspaceId: string, conversationId: string, messageId: string, status: string) {
+  emitMessageStatus(
+    workspaceId: string,
+    conversationId: string,
+    messageId: string,
+    status: string,
+  ) {
     this.server.to(`conversation:${conversationId}`).emit('message:status', { messageId, status });
   }
 
@@ -206,6 +209,6 @@ export class InboxGateway
     if (authHeader?.startsWith('Bearer ')) {
       return authHeader.slice(7);
     }
-    return client.handshake?.auth?.token || client.handshake?.query?.token as string || null;
+    return client.handshake?.auth?.token || (client.handshake?.query?.token as string) || null;
   }
 }

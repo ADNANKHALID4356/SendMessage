@@ -89,10 +89,7 @@ describe('ContactsService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ContactsService,
-        { provide: PrismaService, useValue: mockPrismaService },
-      ],
+      providers: [ContactsService, { provide: PrismaService, useValue: mockPrismaService }],
     }).compile();
 
     service = module.get<ContactsService>(ContactsService);
@@ -137,9 +134,7 @@ describe('ContactsService', () => {
     it('should throw NotFoundException if page not found', async () => {
       mockPrismaService.page.findFirst.mockResolvedValue(null);
 
-      await expect(service.create(mockWorkspaceId, createDto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.create(mockWorkspaceId, createDto)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -169,9 +164,7 @@ describe('ContactsService', () => {
       expect(mockPrismaService.contact.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            OR: expect.arrayContaining([
-              expect.objectContaining({ fullName: expect.any(Object) }),
-            ]),
+            OR: expect.arrayContaining([expect.objectContaining({ fullName: expect.any(Object) })]),
           }),
         }),
       );
@@ -234,9 +227,9 @@ describe('ContactsService', () => {
     it('should throw NotFoundException if contact not found', async () => {
       mockPrismaService.contact.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.update(mockWorkspaceId, 'invalid-id', updateDto),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update(mockWorkspaceId, 'invalid-id', updateDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -279,9 +272,9 @@ describe('ContactsService', () => {
       mockPrismaService.contact.findFirst.mockResolvedValue(mockContact);
       mockPrismaService.tag.findMany.mockResolvedValue([]); // No tags found
 
-      await expect(
-        service.addTags(mockWorkspaceId, mockContactId, [mockTagId]),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.addTags(mockWorkspaceId, mockContactId, [mockTagId])).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -328,9 +321,9 @@ describe('ContactsService', () => {
       it('should throw BadRequestException if tag name exists', async () => {
         mockPrismaService.tag.findUnique.mockResolvedValue(mockTag);
 
-        await expect(
-          service.createTag(mockWorkspaceId, { name: 'VIP' }),
-        ).rejects.toThrow(BadRequestException);
+        await expect(service.createTag(mockWorkspaceId, { name: 'VIP' })).rejects.toThrow(
+          BadRequestException,
+        );
       });
     });
 

@@ -63,7 +63,7 @@ const statusIcons: Record<CampaignStatus, React.ComponentType<{ className?: stri
   failed: XCircle,
 };
 
-const statusColors: Record<CampaignStatus, string> = {
+const statusColors: Record<string, string> = {
   draft: 'text-gray-500 bg-gray-100 dark:bg-gray-800',
   scheduled: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
   running: 'text-green-500 bg-green-100 dark:bg-green-900/30',
@@ -72,7 +72,7 @@ const statusColors: Record<CampaignStatus, string> = {
   failed: 'text-red-500 bg-red-100 dark:bg-red-900/30',
 };
 
-const typeColors: Record<CampaignType, string> = {
+const typeColors: Record<string, string> = {
   broadcast: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   otn: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   recurring: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -156,7 +156,7 @@ export default function CampaignsPage() {
   const totalSent = campaigns.reduce((sum, c) => sum + c.sentCount, 0);
   const totalDelivered = campaigns.reduce((sum, c) => sum + c.deliveredCount, 0);
   const avgDeliveryRate = totalSent > 0 ? ((totalDelivered / totalSent) * 100).toFixed(1) : '0';
-  const activeCampaigns = campaigns.filter((c) => c.status === 'running').length;
+  const activeCampaigns = campaigns.filter((c) => c.status === 'RUNNING').length;
 
   const handleDelete = (campaign: Campaign) => {
     setCampaignToDelete(campaign);
@@ -237,7 +237,7 @@ export default function CampaignsPage() {
           />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {['all', 'draft', 'scheduled', 'running', 'paused', 'completed'].map((status) => (
+          {['all', 'DRAFT', 'SCHEDULED', 'RUNNING', 'PAUSED', 'completed'].map((status) => (
             <Button
               key={status}
               size="sm"
@@ -271,8 +271,8 @@ export default function CampaignsPage() {
                 <tbody>
                   {filteredCampaigns.map((campaign) => {
                     const StatusIcon = statusIcons[campaign.status];
-                    const progress = campaign.targetCount > 0
-                      ? (campaign.sentCount / campaign.targetCount) * 100
+                    const progress = campaign.totalRecipients > 0
+                      ? (campaign.sentCount / campaign.totalRecipients) * 100
                       : 0;
                     const deliveryRate = campaign.sentCount > 0
                       ? ((campaign.deliveredCount / campaign.sentCount) * 100).toFixed(1)
@@ -299,10 +299,10 @@ export default function CampaignsPage() {
                           <span
                             className={cn(
                               'px-2 py-0.5 rounded text-xs font-medium uppercase',
-                              typeColors[campaign.type]
+                              typeColors[campaign.campaignType]
                             )}
                           >
-                            {campaign.type}
+                            {campaign.campaignType}
                           </span>
                         </td>
                         <td className="p-3">
@@ -321,7 +321,7 @@ export default function CampaignsPage() {
                             <Users className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">{campaign.segment?.name || 'All Contacts'}</span>
                             <span className="text-xs text-muted-foreground">
-                              ({formatNumber(campaign.targetCount)})
+                              ({formatNumber(campaign.totalRecipients)})
                             </span>
                           </div>
                         </td>
@@ -363,7 +363,7 @@ export default function CampaignsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              {campaign.status === 'draft' && (
+                              {campaign.status === 'DRAFT' && (
                                 <DropdownMenuItem
                                   onClick={() => launchCampaign.mutate(campaign.id)}
                                   disabled={isLaunching}
@@ -376,7 +376,7 @@ export default function CampaignsPage() {
                                   Launch
                                 </DropdownMenuItem>
                               )}
-                              {campaign.status === 'running' && (
+                              {campaign.status === 'RUNNING' && (
                                 <DropdownMenuItem
                                   onClick={() => pauseCampaign.mutate(campaign.id)}
                                   disabled={isPausing}
@@ -389,7 +389,7 @@ export default function CampaignsPage() {
                                   Pause
                                 </DropdownMenuItem>
                               )}
-                              {campaign.status === 'paused' && (
+                              {campaign.status === 'PAUSED' && (
                                 <DropdownMenuItem
                                   onClick={() => resumeCampaign.mutate(campaign.id)}
                                   disabled={isResuming}
@@ -402,7 +402,7 @@ export default function CampaignsPage() {
                                   Resume
                                 </DropdownMenuItem>
                               )}
-                              {(campaign.status === 'running' || campaign.status === 'paused' || campaign.status === 'scheduled') && (
+                              {(campaign.status === 'RUNNING' || campaign.status === 'PAUSED' || campaign.status === 'SCHEDULED') && (
                                 <DropdownMenuItem
                                   onClick={() => cancelCampaign.mutate(campaign.id)}
                                   disabled={isCancelling}
@@ -419,7 +419,7 @@ export default function CampaignsPage() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => router.push(`/campaigns/${campaign.id}`)}>
                                 <Edit className="h-4 w-4 mr-2" />
-                                {campaign.status === 'draft' ? 'Edit' : 'View Details'}
+                                {campaign.status === 'DRAFT' ? 'Edit' : 'View Details'}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => duplicateCampaign.mutate(campaign.id)}

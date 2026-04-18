@@ -152,22 +152,17 @@ export class AnalyticsService {
       createdAt: { gte: startDate },
     };
 
-    const [
-      totalMessages,
-      inboundMessages,
-      outboundMessages,
-      messagesByStatus,
-      dailyMessages,
-    ] = await Promise.all([
-      this.prisma.message.count({ where }),
-      this.prisma.message.count({ where: { ...where, direction: 'INBOUND' } }),
-      this.prisma.message.count({ where: { ...where, direction: 'OUTBOUND' } }),
-      this.prisma.message.groupBy({
-        by: ['status'],
-        where,
-        _count: true,
-      }),
-      this.prisma.$queryRaw<{ date: string; inbound: number; outbound: number }[]>`
+    const [totalMessages, inboundMessages, outboundMessages, messagesByStatus, dailyMessages] =
+      await Promise.all([
+        this.prisma.message.count({ where }),
+        this.prisma.message.count({ where: { ...where, direction: 'INBOUND' } }),
+        this.prisma.message.count({ where: { ...where, direction: 'OUTBOUND' } }),
+        this.prisma.message.groupBy({
+          by: ['status'],
+          where,
+          _count: true,
+        }),
+        this.prisma.$queryRaw<{ date: string; inbound: number; outbound: number }[]>`
         SELECT 
           DATE(m."created_at") as date,
           COUNT(CASE WHEN m.direction = 'INBOUND' THEN 1 END)::int as inbound,
@@ -179,16 +174,14 @@ export class AnalyticsService {
         GROUP BY DATE(m."created_at")
         ORDER BY date ASC
       `,
-    ]);
+      ]);
 
     const statusCountMap: Record<string, number> = {};
     messagesByStatus.forEach((s) => {
       statusCountMap[s.status] = s._count;
     });
 
-    const responseRate = outboundMessages > 0
-      ? Math.min(inboundMessages / outboundMessages, 1)
-      : 0;
+    const responseRate = outboundMessages > 0 ? Math.min(inboundMessages / outboundMessages, 1) : 0;
 
     return {
       totalMessages,
@@ -244,7 +237,10 @@ export class AnalyticsService {
       }),
     ]);
 
-    const statusMap: Record<string, { count: number; sent: number; delivered: number; failed: number }> = {};
+    const statusMap: Record<
+      string,
+      { count: number; sent: number; delivered: number; failed: number }
+    > = {};
     campaignsByStatus.forEach((s) => {
       statusMap[s.status] = {
         count: s._count,
@@ -260,10 +256,10 @@ export class AnalyticsService {
 
     return {
       totalCampaigns: Object.values(statusMap).reduce((sum, s) => sum + s.count, 0),
-      activeCampaigns: (statusMap['RUNNING']?.count || 0),
-      completedCampaigns: (statusMap['COMPLETED']?.count || 0),
-      draftCampaigns: (statusMap['DRAFT']?.count || 0),
-      scheduledCampaigns: (statusMap['SCHEDULED']?.count || 0),
+      activeCampaigns: statusMap['RUNNING']?.count || 0,
+      completedCampaigns: statusMap['COMPLETED']?.count || 0,
+      draftCampaigns: statusMap['DRAFT']?.count || 0,
+      scheduledCampaigns: statusMap['SCHEDULED']?.count || 0,
       totalSent,
       totalDelivered,
       totalFailed,
@@ -466,7 +462,8 @@ export class AnalyticsService {
 
     return {
       averageResponseTimeMinutes: Math.round(avgResponseTime * 10) / 10,
-      messagesPerContact: totalContacts > 0 ? Math.round((totalMessages / totalContacts) * 10) / 10 : 0,
+      messagesPerContact:
+        totalContacts > 0 ? Math.round((totalMessages / totalContacts) * 10) / 10 : 0,
       activeContactsLast24h: activeContacts24h,
       activeContactsLast7d: activeContacts7d,
       activeContactsLast30d: activeContacts30d,

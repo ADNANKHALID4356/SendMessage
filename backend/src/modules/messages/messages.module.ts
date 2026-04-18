@@ -16,12 +16,7 @@ import { ComplianceService } from './compliance.service';
 import { SponsoredMessageService } from './sponsored-message.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-    ContactsModule,
-    FacebookModule,
-    RedisModule,
-  ],
+  imports: [PrismaModule, ContactsModule, FacebookModule, RedisModule],
   controllers: [MessagesController],
   providers: [
     MessagesService,

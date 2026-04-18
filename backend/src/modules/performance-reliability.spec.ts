@@ -69,8 +69,7 @@ describe('Performance — Bulk Operations', () => {
 
 describe('Reliability — Error Recovery', () => {
   it('should recover from rejected promise with catch', async () => {
-    const unstableOp = () =>
-      new Promise((_, reject) => reject(new Error('Temporary failure')));
+    const unstableOp = () => new Promise((_, reject) => reject(new Error('Temporary failure')));
 
     let recovered = false;
     try {
@@ -124,7 +123,7 @@ describe('Reliability — Error Recovery', () => {
     const increment = async () => {
       const current = counter;
       // Simulate async delay
-      await new Promise(r => setTimeout(r, 1));
+      await new Promise((r) => setTimeout(r, 1));
       counter = current + 1;
     };
 
@@ -176,7 +175,11 @@ describe('Reliability — Graceful Degradation', () => {
 
     // Fail 3 times
     for (let i = 0; i < MAX_FAILURES; i++) {
-      try { await riskyCall(); } catch { /* expected */ }
+      try {
+        await riskyCall();
+      } catch {
+        /* expected */
+      }
     }
 
     // Circuit should now be open
@@ -216,7 +219,7 @@ describe('Data Consistency', () => {
 
     // Every message should reference a valid campaign
     for (const msg of messages) {
-      const campaign = campaigns.find(c => c.id === msg.campaignId);
+      const campaign = campaigns.find((c) => c.id === msg.campaignId);
       expect(campaign).toBeDefined();
     }
   });

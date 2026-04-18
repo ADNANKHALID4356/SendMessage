@@ -15,11 +15,7 @@ import { CampaignsService } from './campaigns.service';
 import { DripCampaignService } from './drip-campaign.service';
 import { AbTestingService } from './ab-testing.service';
 import { TriggerCampaignService } from './trigger-campaign.service';
-import {
-  CreateCampaignDto,
-  UpdateCampaignDto,
-  CampaignListQueryDto,
-} from './dto';
+import { CreateCampaignDto, UpdateCampaignDto, CampaignListQueryDto } from './dto';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser, CurrentWorkspace } from '../auth/decorators';
@@ -56,10 +52,7 @@ export class CampaignsController {
    */
   @Get()
   @Roles('VIEW_ONLY')
-  async findAll(
-    @CurrentWorkspace() workspaceId: string,
-    @Query() query: CampaignListQueryDto,
-  ) {
+  async findAll(@CurrentWorkspace() workspaceId: string, @Query() query: CampaignListQueryDto) {
     return this.campaignsService.findAll(workspaceId, query);
   }
 
@@ -68,10 +61,7 @@ export class CampaignsController {
    */
   @Get(':id')
   @Roles('VIEW_ONLY')
-  async findById(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async findById(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.campaignsService.findById(workspaceId, id);
   }
 
@@ -94,10 +84,7 @@ export class CampaignsController {
   @Delete(':id')
   @Roles('MANAGER')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async delete(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     await this.campaignsService.delete(workspaceId, id);
   }
 
@@ -123,10 +110,7 @@ export class CampaignsController {
    */
   @Post(':id/launch')
   @Roles('MANAGER')
-  async launch(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async launch(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.campaignsService.launch(workspaceId, id);
   }
 
@@ -148,10 +132,7 @@ export class CampaignsController {
    */
   @Post(':id/pause')
   @Roles('MANAGER')
-  async pause(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async pause(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.campaignsService.pause(workspaceId, id);
   }
 
@@ -160,10 +141,7 @@ export class CampaignsController {
    */
   @Post(':id/resume')
   @Roles('MANAGER')
-  async resume(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async resume(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.campaignsService.resume(workspaceId, id);
   }
 
@@ -172,10 +150,7 @@ export class CampaignsController {
    */
   @Post(':id/cancel')
   @Roles('MANAGER')
-  async cancel(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async cancel(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.campaignsService.cancel(workspaceId, id);
   }
 
@@ -188,10 +163,7 @@ export class CampaignsController {
    */
   @Get(':id/stats')
   @Roles('VIEW_ONLY')
-  async getStats(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async getStats(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.campaignsService.getStats(workspaceId, id);
   }
 
@@ -200,10 +172,7 @@ export class CampaignsController {
    */
   @Get(':id/progress')
   @Roles('VIEW_ONLY')
-  async getProgress(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async getProgress(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.campaignsService.getProgress(workspaceId, id);
   }
 
@@ -216,10 +185,7 @@ export class CampaignsController {
    */
   @Post(':id/drip/launch')
   @Roles('MANAGER')
-  async launchDrip(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async launchDrip(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.dripService.launchDripCampaign(workspaceId, id);
   }
 
@@ -237,10 +203,7 @@ export class CampaignsController {
    */
   @Get(':id/drip/contact/:contactId')
   @Roles('VIEW_ONLY')
-  async getDripContactProgress(
-    @Param('id') id: string,
-    @Param('contactId') contactId: string,
-  ) {
+  async getDripContactProgress(@Param('id') id: string, @Param('contactId') contactId: string) {
     return this.dripService.getContactProgress(id, contactId);
   }
 
@@ -250,10 +213,7 @@ export class CampaignsController {
   @Delete(':id/drip/contact/:contactId')
   @Roles('MANAGER')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async removeDripContact(
-    @Param('id') id: string,
-    @Param('contactId') contactId: string,
-  ) {
+  async removeDripContact(@Param('id') id: string, @Param('contactId') contactId: string) {
     await this.dripService.removeContactFromDrip(id, contactId);
   }
 
@@ -266,10 +226,7 @@ export class CampaignsController {
    */
   @Post(':id/ab-test/launch')
   @Roles('MANAGER')
-  async launchAbTest(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async launchAbTest(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.abTestingService.launchAbTest(workspaceId, id);
   }
 
@@ -278,10 +235,7 @@ export class CampaignsController {
    */
   @Get(':id/ab-test/results')
   @Roles('VIEW_ONLY')
-  async getAbTestResults(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async getAbTestResults(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.abTestingService.getAbTestResults(workspaceId, id);
   }
 
@@ -290,10 +244,7 @@ export class CampaignsController {
    */
   @Post(':id/ab-test/send-winner')
   @Roles('MANAGER')
-  async sendWinnerToRemaining(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async sendWinnerToRemaining(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.abTestingService.sendWinnerToRemaining(workspaceId, id);
   }
 
@@ -306,10 +257,7 @@ export class CampaignsController {
    */
   @Post(':id/trigger/activate')
   @Roles('MANAGER')
-  async activateTrigger(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async activateTrigger(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     await this.triggerService.activateTrigger(workspaceId, id);
     return { message: 'Trigger campaign activated' };
   }
@@ -319,10 +267,7 @@ export class CampaignsController {
    */
   @Post(':id/trigger/deactivate')
   @Roles('MANAGER')
-  async deactivateTrigger(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async deactivateTrigger(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     await this.triggerService.deactivateTrigger(workspaceId, id);
     return { message: 'Trigger campaign deactivated' };
   }
@@ -332,10 +277,7 @@ export class CampaignsController {
    */
   @Get(':id/trigger/stats')
   @Roles('VIEW_ONLY')
-  async getTriggerStats(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async getTriggerStats(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.triggerService.getTriggerStats(workspaceId, id);
   }
 
@@ -344,9 +286,7 @@ export class CampaignsController {
    */
   @Get('triggers/active')
   @Roles('VIEW_ONLY')
-  async getActiveTriggers(
-    @CurrentWorkspace() workspaceId: string,
-  ) {
+  async getActiveTriggers(@CurrentWorkspace() workspaceId: string) {
     return this.triggerService.getActiveTriggers(workspaceId);
   }
 }

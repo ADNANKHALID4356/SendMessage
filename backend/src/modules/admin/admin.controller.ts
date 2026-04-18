@@ -58,10 +58,7 @@ export class AdminController {
 
   @Put('settings')
   @ApiOperation({ summary: 'Update system settings' })
-  async updateSettings(
-    @Body() body: Record<string, any>,
-    @CurrentUser() user: any,
-  ) {
+  async updateSettings(@Body() body: Record<string, any>, @CurrentUser() user: any) {
     await this.adminService.updateSettings(body);
     await this.adminService.logActivity({
       adminId: user.isAdmin ? user.id : undefined,
@@ -136,12 +133,9 @@ export class AdminController {
 
   @Get('export/contacts/:workspaceId')
   @ApiOperation({ summary: 'Export contacts for a workspace' })
-  async exportContacts(
-    @Param('workspaceId') workspaceId: string,
-    @Res() res: Response,
-  ) {
+  async exportContacts(@Param('workspaceId') workspaceId: string, @Res() res: Response) {
     const data = await this.adminService.exportContacts(workspaceId);
-    
+
     // Convert to CSV
     if (data.length === 0) {
       res.setHeader('Content-Type', 'text/csv');
@@ -153,12 +147,14 @@ export class AdminController {
     const csvRows = [
       headers.join(','),
       ...data.map((row) =>
-        headers.map((h) => {
-          const val = row[h];
-          if (val === null || val === undefined) return '';
-          if (typeof val === 'object') return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
-          return `"${String(val).replace(/"/g, '""')}"`;
-        }).join(','),
+        headers
+          .map((h) => {
+            const val = row[h];
+            if (val === null || val === undefined) return '';
+            if (typeof val === 'object') return `"${JSON.stringify(val).replace(/"/g, '""')}"`;
+            return `"${String(val).replace(/"/g, '""')}"`;
+          })
+          .join(','),
       ),
     ];
 
@@ -169,12 +165,9 @@ export class AdminController {
 
   @Get('export/campaigns/:workspaceId')
   @ApiOperation({ summary: 'Export campaigns for a workspace' })
-  async exportCampaigns(
-    @Param('workspaceId') workspaceId: string,
-    @Res() res: Response,
-  ) {
+  async exportCampaigns(@Param('workspaceId') workspaceId: string, @Res() res: Response) {
     const data = await this.adminService.exportCampaigns(workspaceId);
-    
+
     if (data.length === 0) {
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=campaigns_${workspaceId}.csv`);
@@ -185,11 +178,13 @@ export class AdminController {
     const csvRows = [
       headers.join(','),
       ...data.map((row) =>
-        headers.map((h) => {
-          const val = (row as any)[h];
-          if (val === null || val === undefined) return '';
-          return `"${String(val).replace(/"/g, '""')}"`;
-        }).join(','),
+        headers
+          .map((h) => {
+            const val = (row as any)[h];
+            if (val === null || val === undefined) return '';
+            return `"${String(val).replace(/"/g, '""')}"`;
+          })
+          .join(','),
       ),
     ];
 
@@ -221,7 +216,8 @@ export class AdminController {
   @Post('reports/generate')
   @ApiOperation({ summary: 'Generate a report' })
   async generateReport(
-    @Body() body: {
+    @Body()
+    body: {
       workspaceId: string;
       reportType: ReportType;
       startDate: string;
@@ -297,10 +293,7 @@ export class AdminController {
 
   @Post('backups/:workspaceId')
   @ApiOperation({ summary: 'Create workspace backup' })
-  async createBackup(
-    @Param('workspaceId') workspaceId: string,
-    @CurrentUser() user: any,
-  ) {
+  async createBackup(@Param('workspaceId') workspaceId: string, @CurrentUser() user: any) {
     const backup = await this.backupService.createBackup(workspaceId);
     await this.adminService.logActivity({
       adminId: user.isAdmin ? user.id : undefined,
@@ -353,13 +346,13 @@ export class AdminController {
 
   @Get('backups/:workspaceId/export')
   @ApiOperation({ summary: 'Full workspace data export' })
-  async exportWorkspaceData(
-    @Param('workspaceId') workspaceId: string,
-    @Res() res: Response,
-  ) {
+  async exportWorkspaceData(@Param('workspaceId') workspaceId: string, @Res() res: Response) {
     const data = await this.backupService.exportWorkspaceData(workspaceId);
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename=workspace_${workspaceId}_export.json`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=workspace_${workspaceId}_export.json`,
+    );
     res.send(JSON.stringify(data, null, 2));
   }
 
@@ -369,10 +362,7 @@ export class AdminController {
 
   @Put('email/smtp/:workspaceId')
   @ApiOperation({ summary: 'Configure SMTP settings' })
-  async configureSmtp(
-    @Param('workspaceId') workspaceId: string,
-    @Body() config: SmtpConfig,
-  ) {
+  async configureSmtp(@Param('workspaceId') workspaceId: string, @Body() config: SmtpConfig) {
     return this.emailService.configureSmtp(workspaceId, config);
   }
 
@@ -394,7 +384,8 @@ export class AdminController {
   @Post('email/invite')
   @ApiOperation({ summary: 'Send team invitation email' })
   async sendInvitation(
-    @Body() body: {
+    @Body()
+    body: {
       workspaceId: string;
       inviteeEmail: string;
       inviterName: string;
@@ -414,12 +405,7 @@ export class AdminController {
   @Post('email/notification')
   @ApiOperation({ summary: 'Send system notification email' })
   async sendNotification(
-    @Body() body: {
-      workspaceId: string;
-      email: string;
-      title: string;
-      message: string;
-    },
+    @Body() body: { workspaceId: string; email: string; title: string; message: string },
   ) {
     return this.emailService.sendSystemNotification(
       body.workspaceId,

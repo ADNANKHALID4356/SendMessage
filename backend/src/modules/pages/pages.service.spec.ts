@@ -57,7 +57,15 @@ describe('PagesService', () => {
         PagesService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: FacebookApiService, useValue: mockFbApiService },
-        { provide: EncryptionService, useValue: { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v), encryptIfNeeded: jest.fn((v) => v), decryptIfNeeded: jest.fn((v) => v) } },
+        {
+          provide: EncryptionService,
+          useValue: {
+            encrypt: jest.fn((v) => v),
+            decrypt: jest.fn((v) => v),
+            encryptIfNeeded: jest.fn((v) => v),
+            decryptIfNeeded: jest.fn((v) => v),
+          },
+        },
       ],
     }).compile();
 
@@ -128,9 +136,9 @@ describe('PagesService', () => {
     it('should throw if page not in workspace', async () => {
       mockPrismaService.page.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.update('page-1', 'wrong-workspace', {})
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update('page-1', 'wrong-workspace', {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -174,9 +182,7 @@ describe('PagesService', () => {
   describe('getStats', () => {
     it('should return page statistics', async () => {
       mockPrismaService.page.findFirst.mockResolvedValue(mockPage);
-      mockPrismaService.conversation.count
-        .mockResolvedValueOnce(100)
-        .mockResolvedValueOnce(20);
+      mockPrismaService.conversation.count.mockResolvedValueOnce(100).mockResolvedValueOnce(20);
       mockPrismaService.message.groupBy.mockResolvedValue([
         { direction: 'INBOUND', _count: 500 },
         { direction: 'OUTBOUND', _count: 300 },

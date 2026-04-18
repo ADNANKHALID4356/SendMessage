@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { BypassMethod, MessageTag } from '@prisma/client';
@@ -57,10 +53,10 @@ export class ComplianceService {
 
   // Cooldown periods in seconds per tag type
   private readonly TAG_COOLDOWNS: Record<string, number> = {
-    CONFIRMED_EVENT_UPDATE: 86400,   // 24 hours between event updates
-    POST_PURCHASE_UPDATE: 86400,     // 24 hours between purchase updates
-    ACCOUNT_UPDATE: 43200,           // 12 hours between account updates
-    HUMAN_AGENT: 604800,             // 7 days (actually controlled by FB)
+    CONFIRMED_EVENT_UPDATE: 86400, // 24 hours between event updates
+    POST_PURCHASE_UPDATE: 86400, // 24 hours between purchase updates
+    ACCOUNT_UPDATE: 43200, // 12 hours between account updates
+    HUMAN_AGENT: 604800, // 7 days (actually controlled by FB)
   };
 
   // Maximum tag usage per contact per 30-day rolling window
@@ -104,15 +100,24 @@ export class ComplianceService {
     });
 
     if (!contact) {
-      return { canSend: false, warnings: [{ type: 'error', code: 'CONTACT_NOT_FOUND', message: 'Contact not found' }], recommendedBypassMethod: null };
+      return {
+        canSend: false,
+        warnings: [{ type: 'error', code: 'CONTACT_NOT_FOUND', message: 'Contact not found' }],
+        recommendedBypassMethod: null,
+      };
     }
 
     if (!contact.isSubscribed) {
-      return { canSend: false, warnings: [{ type: 'error', code: 'UNSUBSCRIBED', message: 'Contact has unsubscribed' }], recommendedBypassMethod: null };
+      return {
+        canSend: false,
+        warnings: [{ type: 'error', code: 'UNSUBSCRIBED', message: 'Contact has unsubscribed' }],
+        recommendedBypassMethod: null,
+      };
     }
 
-    const isWithinWindow = contact.lastMessageFromContactAt &&
-      (Date.now() - contact.lastMessageFromContactAt.getTime()) < 24 * 60 * 60 * 1000;
+    const isWithinWindow =
+      contact.lastMessageFromContactAt &&
+      Date.now() - contact.lastMessageFromContactAt.getTime() < 24 * 60 * 60 * 1000;
 
     if (!isWithinWindow) {
       if (!bypassMethod || bypassMethod === BypassMethod.WITHIN_WINDOW) {
@@ -140,14 +145,17 @@ export class ComplianceService {
     if (messageTag) {
       const tagWarnings = await this.checkTagCompliance(contactId, messageTag);
       warnings.push(...tagWarnings);
-      if (tagWarnings.some(w => w.type === 'error')) canSend = false;
+      if (tagWarnings.some((w) => w.type === 'error')) canSend = false;
     }
 
     // 3. Check cooldown period (FR-7.7.5)
     const cooldownKey = `${this.COOLDOWN_PREFIX}${contactId}:${pageId}`;
     const cooldownExpiry = await this.redis.get(cooldownKey);
     if (cooldownExpiry) {
-      const remainingSeconds = Math.max(0, parseInt(cooldownExpiry, 10) - Math.floor(Date.now() / 1000));
+      const remainingSeconds = Math.max(
+        0,
+        parseInt(cooldownExpiry, 10) - Math.floor(Date.now() / 1000),
+      );
       if (remainingSeconds > 0) {
         warnings.push({
           type: 'warning',
@@ -254,7 +262,7 @@ export class ComplianceService {
         warnings.push({
           type: 'info',
           code: 'TAG_REQUIREMENT',
-          message: 'Must be a non-recurring update about the user\'s account or application.',
+          message: "Must be a non-recurring update about the user's account or application.",
         });
         break;
       case 'HUMAN_AGENT':
@@ -297,15 +305,13 @@ export class ComplianceService {
           messageTag,
           isCompliant,
           warningCount: warnings.length,
-          warnings: warnings.map(w => w.code),
+          warnings: warnings.map((w) => w.code),
         } as any,
       },
     });
 
     // Set cooldown
-    const cooldownSeconds = messageTag
-      ? (this.TAG_COOLDOWNS[messageTag] || 3600)
-      : 1800; // Default 30 min cooldown
+    const cooldownSeconds = messageTag ? this.TAG_COOLDOWNS[messageTag] || 3600 : 1800; // Default 30 min cooldown
 
     const cooldownKey = `${this.COOLDOWN_PREFIX}${contactId}:${pageId}`;
     const expiresAt = Math.floor(Date.now() / 1000) + cooldownSeconds;
@@ -391,14 +397,14 @@ export class ComplianceService {
     });
 
     const violationCount = violations.filter(
-      v => (v.details as any)?.isCompliant === false,
+      (v) => (v.details as any)?.isCompliant === false,
     ).length;
 
     // Top violating contacts
     const contactViolations: Record<string, number> = {};
     violations
-      .filter(v => (v.details as any)?.isCompliant === false)
-      .forEach(v => {
+      .filter((v) => (v.details as any)?.isCompliant === false)
+      .forEach((v) => {
         if (v.entityId) contactViolations[v.entityId] = (contactViolations[v.entityId] || 0) + 1;
       });
 
@@ -414,14 +420,18 @@ export class ComplianceService {
         });
         return {
           contactId,
-          contactName: [contact?.firstName, contact?.lastName].filter(Boolean).join(' ') || 'Unknown',
+          contactName:
+            [contact?.firstName, contact?.lastName].filter(Boolean).join(' ') || 'Unknown',
           violationCount: count,
         };
       }),
     );
 
     // Daily breakdown
-    const dailyMap: Record<string, { messages: number; bypassMessages: number; violations: number }> = {};
+    const dailyMap: Record<
+      string,
+      { messages: number; bypassMessages: number; violations: number }
+    > = {};
 
     for (const msg of messages) {
       const dateKey = msg.createdAt.toISOString().split('T')[0];
@@ -443,7 +453,10 @@ export class ComplianceService {
         bypassMethodUsage,
         tagUsage,
         complianceViolations: violationCount,
-        averageCooldownRespected: messages.length > 0 ? Math.round(((messages.length - violationCount) / messages.length) * 100) : 100,
+        averageCooldownRespected:
+          messages.length > 0
+            ? Math.round(((messages.length - violationCount) / messages.length) * 100)
+            : 100,
       },
       topViolatingContacts,
       dailyBreakdown,
@@ -487,7 +500,8 @@ export class ComplianceService {
     });
 
     if (contact?.lastMessageFromContactAt) {
-      const daysSinceMessage = (Date.now() - contact.lastMessageFromContactAt.getTime()) / (1000 * 60 * 60 * 24);
+      const daysSinceMessage =
+        (Date.now() - contact.lastMessageFromContactAt.getTime()) / (1000 * 60 * 60 * 24);
       if (daysSinceMessage <= 7) return BypassMethod.MESSAGE_TAG_HUMAN_AGENT;
     }
 

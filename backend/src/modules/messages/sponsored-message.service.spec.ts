@@ -177,7 +177,9 @@ describe('SponsoredMessageService', () => {
       });
       mockPrisma.contact.count.mockResolvedValue(10);
       mockFacebookApi.createSponsoredMessageAd.mockResolvedValue({
-        campaignId: 'fb_camp_1', adSetId: 'fb_adset_1', adId: 'fb_ad_1',
+        campaignId: 'fb_camp_1',
+        adSetId: 'fb_adset_1',
+        adId: 'fb_ad_1',
       });
 
       const campaign = await service.createSponsoredCampaign({
@@ -203,7 +205,9 @@ describe('SponsoredMessageService', () => {
       });
       mockPrisma.contact.count.mockResolvedValue(10);
       mockFacebookApi.createSponsoredMessageAd.mockResolvedValue({
-        campaignId: 'fb_camp_1', adSetId: 'fb_adset_1', adId: 'fb_ad_1',
+        campaignId: 'fb_camp_1',
+        adSetId: 'fb_adset_1',
+        adId: 'fb_ad_1',
       });
       mockFacebookApi.getSponsoredCampaignInsights.mockResolvedValue({
         impressions: 5000,
@@ -253,7 +257,9 @@ describe('SponsoredMessageService', () => {
     });
 
     it('should throw for non-existent campaign', async () => {
-      await expect(service.getCampaignStats('nonexistent')).rejects.toThrow('Sponsored campaign not found');
+      await expect(service.getCampaignStats('nonexistent')).rejects.toThrow(
+        'Sponsored campaign not found',
+      );
     });
   });
 

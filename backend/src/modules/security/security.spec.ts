@@ -80,11 +80,9 @@ describe('Security: Black Hat Tests', () => {
     it('should reject JWT tokens with tampered payload', () => {
       // A JWT signed with a different secret should be rejected
       const jwt = require('jsonwebtoken');
-      const tamperedToken = jwt.sign(
-        { sub: 'user-1', isAdmin: true },
-        'wrong_secret',
-        { expiresIn: '1h' },
-      );
+      const tamperedToken = jwt.sign({ sub: 'user-1', isAdmin: true }, 'wrong_secret', {
+        expiresIn: '1h',
+      });
       expect(() =>
         jwt.verify(tamperedToken, process.env.JWT_SECRET || 'test_jwt_secret'),
       ).toThrow();
@@ -93,13 +91,13 @@ describe('Security: Black Hat Tests', () => {
     it('should reject JWT tokens with "none" algorithm', () => {
       // The "none" algorithm attack — token without signature
       const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
-      const payload = Buffer.from(JSON.stringify({ sub: 'admin', isAdmin: true })).toString('base64url');
+      const payload = Buffer.from(JSON.stringify({ sub: 'admin', isAdmin: true })).toString(
+        'base64url',
+      );
       const noneToken = `${header}.${payload}.`;
 
       const jwt = require('jsonwebtoken');
-      expect(() =>
-        jwt.verify(noneToken, process.env.JWT_SECRET || 'test_jwt_secret'),
-      ).toThrow();
+      expect(() => jwt.verify(noneToken, process.env.JWT_SECRET || 'test_jwt_secret')).toThrow();
     });
   });
 

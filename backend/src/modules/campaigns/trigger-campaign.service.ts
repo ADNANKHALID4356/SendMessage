@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { MessageQueueService, MessageJobData } from '../messages/message-queue.service';
@@ -14,11 +9,17 @@ import { CampaignStatus } from '@prisma/client';
 // ===========================================
 
 export interface TriggerCondition {
-  type: 'new_contact' | 'tag_added' | 'tag_removed' | 'engagement_change' | 'custom_field_match' | 'inactivity';
-  field?: string;       // For custom_field_match or engagement_change
+  type:
+    | 'new_contact'
+    | 'tag_added'
+    | 'tag_removed'
+    | 'engagement_change'
+    | 'custom_field_match'
+    | 'inactivity';
+  field?: string; // For custom_field_match or engagement_change
   operator?: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'in';
-  value?: any;          // Expected value
-  tagName?: string;     // For tag_added/tag_removed
+  value?: any; // Expected value
+  tagName?: string; // For tag_added/tag_removed
   inactivityDays?: number; // For inactivity trigger
 }
 
@@ -51,10 +52,7 @@ export class TriggerCampaignService {
   /**
    * Activate a trigger-based campaign
    */
-  async activateTrigger(
-    workspaceId: string,
-    campaignId: string,
-  ): Promise<void> {
+  async activateTrigger(workspaceId: string, campaignId: string): Promise<void> {
     const campaign = await this.prisma.campaign.findFirst({
       where: { id: campaignId, workspaceId, campaignType: 'TRIGGER' },
     });
@@ -99,10 +97,7 @@ export class TriggerCampaignService {
   /**
    * Deactivate a trigger-based campaign
    */
-  async deactivateTrigger(
-    workspaceId: string,
-    campaignId: string,
-  ): Promise<void> {
+  async deactivateTrigger(workspaceId: string, campaignId: string): Promise<void> {
     await this.redis.del(`${this.TRIGGER_PREFIX}active:${campaignId}`);
 
     const client = this.redis.getClient();
@@ -158,7 +153,7 @@ export class TriggerCampaignService {
 
       // Evaluate conditions
       const conditionResults = await Promise.all(
-        config.conditions.map(c => this.evaluateCondition(c, contactId, eventType, eventData)),
+        config.conditions.map((c) => this.evaluateCondition(c, contactId, eventType, eventData)),
       );
 
       const shouldTrigger = config.matchAll
@@ -244,7 +239,8 @@ export class TriggerCampaignService {
           select: { lastInteractionAt: true },
         });
         if (!contact?.lastInteractionAt) return true;
-        const daysSince = (Date.now() - contact.lastInteractionAt.getTime()) / (1000 * 60 * 60 * 24);
+        const daysSince =
+          (Date.now() - contact.lastInteractionAt.getTime()) / (1000 * 60 * 60 * 24);
         return daysSince >= (condition.inactivityDays || 7);
       }
 
@@ -292,9 +288,7 @@ export class TriggerCampaignService {
       },
     };
 
-    await this.messageQueue.addMessage(
-      jobData,
-    );
+    await this.messageQueue.addMessage(jobData);
 
     // Increment campaign sent count
     await this.prisma.campaign.update({
@@ -302,9 +296,7 @@ export class TriggerCampaignService {
       data: { sentCount: { increment: 1 } },
     });
 
-    this.logger.log(
-      `Trigger campaign ${campaignId} fired for contact ${contactId}`,
-    );
+    this.logger.log(`Trigger campaign ${campaignId} fired for contact ${contactId}`);
   }
 
   // ===========================================

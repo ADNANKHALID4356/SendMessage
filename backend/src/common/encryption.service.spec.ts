@@ -198,15 +198,15 @@ describe('EncryptionService', () => {
     });
 
     it('should throw in production when no key is set', async () => {
-      await expect(
-        createService({ ENCRYPTION_KEY: '', NODE_ENV: 'production' }),
-      ).rejects.toThrow('ENCRYPTION_KEY is required in production/staging');
+      await expect(createService({ ENCRYPTION_KEY: '', NODE_ENV: 'production' })).rejects.toThrow(
+        'ENCRYPTION_KEY is required in production/staging',
+      );
     });
 
     it('should throw in staging when no key is set', async () => {
-      await expect(
-        createService({ ENCRYPTION_KEY: '', NODE_ENV: 'staging' }),
-      ).rejects.toThrow('ENCRYPTION_KEY is required in production/staging');
+      await expect(createService({ ENCRYPTION_KEY: '', NODE_ENV: 'staging' })).rejects.toThrow(
+        'ENCRYPTION_KEY is required in production/staging',
+      );
     });
   });
 

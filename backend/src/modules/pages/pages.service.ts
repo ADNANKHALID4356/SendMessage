@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FacebookApiService } from '../facebook/facebook-api.service';
 import { EncryptionService } from '../../common/encryption.service';
@@ -90,7 +85,10 @@ export class PagesService {
 
     // Unsubscribe from webhook
     try {
-      await this.fbApi.unsubscribePageFromWebhook(page.fbPageId, this.encryption.decryptIfNeeded(page.accessToken));
+      await this.fbApi.unsubscribePageFromWebhook(
+        page.fbPageId,
+        this.encryption.decryptIfNeeded(page.accessToken),
+      );
     } catch (error) {
       this.logger.warn(`Failed to unsubscribe page ${page.fbPageId} from webhook:`, error);
     }
@@ -118,7 +116,7 @@ export class PagesService {
     try {
       webhookActive = await this.fbApi.subscribePageToWebhook(
         page.fbPageId,
-        this.encryption.decryptIfNeeded(page.accessToken)
+        this.encryption.decryptIfNeeded(page.accessToken),
       );
     } catch (error) {
       this.logger.warn(`Failed to subscribe page ${page.fbPageId} to webhook:`, error);
@@ -141,36 +139,36 @@ export class PagesService {
       throw new NotFoundException(`Page not found in this workspace`);
     }
 
-    const [
-      totalConversations,
-      activeConversations,
-      messageStats,
-      totalContacts,
-    ] = await Promise.all([
-      this.prisma.conversation.count({
-        where: { pageId: page.id },
-      }),
-      this.prisma.conversation.count({
-        where: { pageId: page.id, status: 'OPEN' },
-      }),
-      this.prisma.message.groupBy({
-        by: ['direction'],
-        where: {
-          conversation: { pageId: page.id },
-        },
-        _count: true,
-      }),
-      this.prisma.contact.count({
-        where: {
-          conversations: {
-            some: { pageId: page.id },
+    const [totalConversations, activeConversations, messageStats, totalContacts] =
+      await Promise.all([
+        this.prisma.conversation.count({
+          where: { pageId: page.id },
+        }),
+        this.prisma.conversation.count({
+          where: { pageId: page.id, status: 'OPEN' },
+        }),
+        this.prisma.message.groupBy({
+          by: ['direction'],
+          where: {
+            conversation: { pageId: page.id },
           },
-        },
-      }),
-    ]);
+          _count: true,
+        }),
+        this.prisma.contact.count({
+          where: {
+            conversations: {
+              some: { pageId: page.id },
+            },
+          },
+        }),
+      ]);
 
-    const inbound = messageStats.find((s: { direction: string; _count: number }) => s.direction === 'INBOUND')?._count || 0;
-    const outbound = messageStats.find((s: { direction: string; _count: number }) => s.direction === 'OUTBOUND')?._count || 0;
+    const inbound =
+      messageStats.find((s: { direction: string; _count: number }) => s.direction === 'INBOUND')
+        ?._count || 0;
+    const outbound =
+      messageStats.find((s: { direction: string; _count: number }) => s.direction === 'OUTBOUND')
+        ?._count || 0;
 
     return {
       totalConversations,
@@ -197,7 +195,7 @@ export class PagesService {
     // Try to subscribe
     const subscribed = await this.fbApi.subscribePageToWebhook(
       page.fbPageId,
-      this.encryption.decryptIfNeeded(page.accessToken)
+      this.encryption.decryptIfNeeded(page.accessToken),
     );
 
     if (subscribed !== page.webhookSubscribed) {
@@ -264,7 +262,9 @@ export class PagesService {
       throw new NotFoundException(`Page not found`);
     }
 
-    const tokenInfo = await this.fbApi.debugToken(this.encryption.decryptIfNeeded(page.accessToken));
+    const tokenInfo = await this.fbApi.debugToken(
+      this.encryption.decryptIfNeeded(page.accessToken),
+    );
 
     return {
       valid: tokenInfo.is_valid,
@@ -285,7 +285,10 @@ export class PagesService {
       throw new NotFoundException(`Page not found`);
     }
 
-    const pageInfo = await this.fbApi.getPageInfo(page.fbPageId, this.encryption.decryptIfNeeded(page.accessToken));
+    const pageInfo = await this.fbApi.getPageInfo(
+      page.fbPageId,
+      this.encryption.decryptIfNeeded(page.accessToken),
+    );
 
     return this.prisma.page.update({
       where: { id },

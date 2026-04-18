@@ -40,7 +40,8 @@ export const envValidationSchema = Joi.object({
   }),
   JWT_EXPIRES_IN: Joi.string().default('15m'),
   JWT_REFRESH_SECRET: Joi.string().min(32).required().messages({
-    'any.required': 'JWT_REFRESH_SECRET is required (min 32 chars). Generate with: openssl rand -hex 32',
+    'any.required':
+      'JWT_REFRESH_SECRET is required (min 32 chars). Generate with: openssl rand -hex 32',
     'string.min': 'JWT_REFRESH_SECRET must be at least 32 characters for security',
   }),
   JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d'),
@@ -57,7 +58,8 @@ export const envValidationSchema = Joi.object({
       otherwise: Joi.optional().default('0'.repeat(64)),
     })
     .messages({
-      'any.required': 'ENCRYPTION_KEY is required in production (64 hex chars = 32 bytes). Generate with: openssl rand -hex 32',
+      'any.required':
+        'ENCRYPTION_KEY is required in production (64 hex chars = 32 bytes). Generate with: openssl rand -hex 32',
       'string.hex': 'ENCRYPTION_KEY must be a hexadecimal string',
       'string.length': 'ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes)',
     }),
@@ -65,27 +67,33 @@ export const envValidationSchema = Joi.object({
   // ──────────────────────────────────────────
   // Facebook API
   // ──────────────────────────────────────────
-  FACEBOOK_APP_ID: Joi.string().when('NODE_ENV', {
-    is: Joi.string().valid('production', 'staging'),
-    then: Joi.required(),
-    otherwise: Joi.optional().default(''),
-  }).messages({
-    'any.required': 'FACEBOOK_APP_ID is required in production',
-  }),
-  FACEBOOK_APP_SECRET: Joi.string().when('NODE_ENV', {
-    is: Joi.string().valid('production', 'staging'),
-    then: Joi.required(),
-    otherwise: Joi.optional().default(''),
-  }).messages({
-    'any.required': 'FACEBOOK_APP_SECRET is required in production',
-  }),
-  FACEBOOK_WEBHOOK_VERIFY_TOKEN: Joi.string().when('NODE_ENV', {
-    is: Joi.string().valid('production', 'staging'),
-    then: Joi.required(),
-    otherwise: Joi.optional().default('local-verify-token'),
-  }).messages({
-    'any.required': 'FACEBOOK_WEBHOOK_VERIFY_TOKEN is required in production',
-  }),
+  FACEBOOK_APP_ID: Joi.string()
+    .when('NODE_ENV', {
+      is: Joi.string().valid('production', 'staging'),
+      then: Joi.required(),
+      otherwise: Joi.optional().default(''),
+    })
+    .messages({
+      'any.required': 'FACEBOOK_APP_ID is required in production',
+    }),
+  FACEBOOK_APP_SECRET: Joi.string()
+    .when('NODE_ENV', {
+      is: Joi.string().valid('production', 'staging'),
+      then: Joi.required(),
+      otherwise: Joi.optional().default(''),
+    })
+    .messages({
+      'any.required': 'FACEBOOK_APP_SECRET is required in production',
+    }),
+  FACEBOOK_WEBHOOK_VERIFY_TOKEN: Joi.string()
+    .when('NODE_ENV', {
+      is: Joi.string().valid('production', 'staging'),
+      then: Joi.required(),
+      otherwise: Joi.optional().default('local-verify-token'),
+    })
+    .messages({
+      'any.required': 'FACEBOOK_WEBHOOK_VERIFY_TOKEN is required in production',
+    }),
   FACEBOOK_API_VERSION: Joi.string().default('v18.0'),
 
   // ──────────────────────────────────────────

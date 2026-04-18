@@ -19,7 +19,9 @@ describe('AuthController', () => {
   };
 
   const mockRedisService = {
-    getClient: jest.fn().mockReturnValue({ get: jest.fn(), incr: jest.fn(), expire: jest.fn(), ttl: jest.fn() }),
+    getClient: jest
+      .fn()
+      .mockReturnValue({ get: jest.fn(), incr: jest.fn(), expire: jest.fn(), ttl: jest.fn() }),
     del: jest.fn(),
   };
 

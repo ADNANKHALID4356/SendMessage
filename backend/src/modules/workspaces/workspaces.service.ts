@@ -24,7 +24,7 @@ export class WorkspacesService {
     const count = await this.prisma.workspace.count();
     if (count >= MAX_WORKSPACES) {
       throw new BadRequestException(
-        `Maximum of ${MAX_WORKSPACES} workspaces allowed. Please contact the developer to expand.`
+        `Maximum of ${MAX_WORKSPACES} workspaces allowed. Please contact the developer to expand.`,
       );
     }
 
@@ -72,7 +72,7 @@ export class WorkspacesService {
     });
 
     // Map to the format frontend expects (with `status` field derived from `isActive`)
-    const mappedWorkspaces = workspaces.map(w => ({
+    const mappedWorkspaces = workspaces.map((w) => ({
       ...w,
       status: w.isActive ? 'active' : 'inactive',
     }));
@@ -109,7 +109,7 @@ export class WorkspacesService {
       orderBy: { workspace: { sortOrder: 'asc' } },
     });
 
-    const workspaces = accessRecords.map(a => ({
+    const workspaces = accessRecords.map((a) => ({
       ...a.workspace,
       status: a.workspace.isActive ? 'active' : 'inactive',
     }));
@@ -299,7 +299,7 @@ export class WorkspacesService {
   async checkUserAccess(
     workspaceId: string,
     userId: string,
-    requiredLevel?: PermissionLevel
+    requiredLevel?: PermissionLevel,
   ): Promise<boolean> {
     const access = await this.prisma.workspaceUserAccess.findUnique({
       where: {
@@ -352,8 +352,12 @@ export class WorkspacesService {
       }),
     ]);
 
-    const inbound = messageStats.find((s: { direction: string; _count: number }) => s.direction === 'INBOUND')?._count || 0;
-    const outbound = messageStats.find((s: { direction: string; _count: number }) => s.direction === 'OUTBOUND')?._count || 0;
+    const inbound =
+      messageStats.find((s: { direction: string; _count: number }) => s.direction === 'INBOUND')
+        ?._count || 0;
+    const outbound =
+      messageStats.find((s: { direction: string; _count: number }) => s.direction === 'OUTBOUND')
+        ?._count || 0;
 
     return {
       totalContacts,
@@ -375,7 +379,7 @@ export class WorkspacesService {
       this.prisma.workspace.update({
         where: { id },
         data: { sortOrder: index },
-      })
+      }),
     );
 
     await this.prisma.$transaction(updates);
@@ -430,7 +434,10 @@ export class WorkspacesService {
   /**
    * Accept an invitation token
    */
-  async acceptInvite(token: string, userId: string): Promise<{ workspaceId: string; role: string }> {
+  async acceptInvite(
+    token: string,
+    userId: string,
+  ): Promise<{ workspaceId: string; role: string }> {
     // Find the invite across all workspaces
     const settings = await this.prisma.systemSetting.findMany({
       where: { key: { startsWith: 'workspace_invites_' } },
@@ -438,9 +445,7 @@ export class WorkspacesService {
 
     for (const setting of settings) {
       const invites = setting.value as unknown as any[];
-      const inviteIdx = invites.findIndex(
-        (i: any) => i.token === token && i.status === 'pending',
-      );
+      const inviteIdx = invites.findIndex((i: any) => i.token === token && i.status === 'pending');
 
       if (inviteIdx >= 0) {
         const invite = invites[inviteIdx];
@@ -511,9 +516,7 @@ export class WorkspacesService {
     if (!setting) return { success: false };
 
     const invites = setting.value as unknown as any[];
-    const idx = invites.findIndex(
-      (i: any) => i.email === email && i.status === 'pending',
-    );
+    const idx = invites.findIndex((i: any) => i.email === email && i.status === 'pending');
 
     if (idx >= 0) {
       invites[idx].status = 'revoked';

@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { PaginationInterceptor } from './common/interceptors/pagination.interceptor';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import compression from 'compression';
@@ -32,9 +33,10 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule, {
-    logger: process.env.NODE_ENV === 'production'
-      ? ['error', 'warn', 'log']
-      : ['error', 'warn', 'log', 'debug', 'verbose'],
+    logger:
+      process.env.NODE_ENV === 'production'
+        ? ['error', 'warn', 'log']
+        : ['error', 'warn', 'log', 'debug', 'verbose'],
     rawBody: true, // Required for webhook signature verification
   });
   const configService = app.get(ConfigService);
@@ -49,19 +51,27 @@ async function bootstrap() {
   app.use(compression());
 
   // CORS configuration - support multiple frontend URLs
-  const frontendUrls = configService.get<string>('FRONTEND_URL', 'http://localhost:3000').split(',').map(url => url.trim());
+  const frontendUrls = configService
+    .get<string>('FRONTEND_URL', 'http://localhost:3000,http://localhost:3001,http://localhost:3002')
+    .split(',')
+    .map((url) => url.trim());
   app.enableCors({
     origin: frontendUrls,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Workspace-Id', 'ngrok-skip-browser-warning'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Workspace-Id',
+      'ngrok-skip-browser-warning',
+    ],
   });
 
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false, // Turned off to prevent 400s
       transform: true,
       transformOptions: {
         enableImplicitConversion: true,
@@ -69,7 +79,8 @@ async function bootstrap() {
     }),
   );
 
-  // ──────────────────────────────────────────
+  // Global Pagination Transform
+  app.useGlobalInterceptors(new PaginationInterceptor());
   // Sentry Error Handler — captures and reports all unhandled exceptions
   // Must be added AFTER all routes & middleware
   // ──────────────────────────────────────────

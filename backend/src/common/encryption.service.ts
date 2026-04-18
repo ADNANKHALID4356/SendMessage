@@ -6,12 +6,7 @@
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-  timingSafeEqual,
-} from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from 'crypto';
 
 /** Encryption algorithm — AES-256 in GCM mode (authenticated encryption) */
 const ALGORITHM = 'aes-256-gcm';
@@ -79,19 +74,14 @@ export class EncryptionService implements OnModuleInit {
         authTagLength: AUTH_TAG_LENGTH,
       });
 
-      const encrypted = Buffer.concat([
-        cipher.update(plaintext, 'utf8'),
-        cipher.final(),
-      ]);
+      const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
 
       const authTag = cipher.getAuthTag();
 
       // Return as iv:authTag:ciphertext (all base64-encoded)
-      return [
-        iv.toString('base64'),
-        authTag.toString('base64'),
-        encrypted.toString('base64'),
-      ].join(SEPARATOR);
+      return [iv.toString('base64'), authTag.toString('base64'), encrypted.toString('base64')].join(
+        SEPARATOR,
+      );
     } catch (error) {
       this.logger.error('Encryption failed', error instanceof Error ? error.stack : error);
       throw new Error('Encryption failed');
@@ -112,9 +102,7 @@ export class EncryptionService implements OnModuleInit {
 
     const parts = encryptedValue.split(SEPARATOR);
     if (parts.length !== 3) {
-      throw new Error(
-        'Invalid encrypted value format. Expected iv:authTag:ciphertext',
-      );
+      throw new Error('Invalid encrypted value format. Expected iv:authTag:ciphertext');
     }
 
     try {
@@ -137,10 +125,7 @@ export class EncryptionService implements OnModuleInit {
       });
       decipher.setAuthTag(authTag);
 
-      const decrypted = Buffer.concat([
-        decipher.update(ciphertext),
-        decipher.final(),
-      ]);
+      const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
 
       return decrypted.toString('utf8');
     } catch (error) {

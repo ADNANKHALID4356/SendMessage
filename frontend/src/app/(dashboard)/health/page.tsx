@@ -61,7 +61,7 @@ export default function SystemHealthPage() {
 
     // Check Database (via API)
     try {
-      const res = await apiClient.get('/admin/system-health');
+      const res = await apiClient.get('/admin/health');
       const data = res.data;
       checks.push({
         name: 'PostgreSQL Database',

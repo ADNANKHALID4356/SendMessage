@@ -1,4 +1,10 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy, OnApplicationShutdown } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  OnApplicationShutdown,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
@@ -10,10 +16,7 @@ export class PrismaService
 
   constructor() {
     super({
-      log:
-        process.env.NODE_ENV === 'development'
-          ? ['query', 'info', 'warn', 'error']
-          : ['error'],
+      log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
     });
   }
 
@@ -43,13 +46,15 @@ export class PrismaService
         !key.startsWith('_') &&
         !key.startsWith('$') &&
         typeof (this as unknown as Record<string, unknown>)[key] === 'object' &&
-        ((this as unknown as Record<string, { deleteMany?: unknown }>)[key])?.deleteMany !== undefined
+        (this as unknown as Record<string, { deleteMany?: unknown }>)[key]?.deleteMany !== undefined
       );
     });
 
     return Promise.all(
       models.map((modelKey) => {
-        return (this as unknown as Record<string, { deleteMany: () => Promise<unknown> }>)[modelKey].deleteMany();
+        return (this as unknown as Record<string, { deleteMany: () => Promise<unknown> }>)[
+          modelKey
+        ].deleteMany();
       }),
     );
   }

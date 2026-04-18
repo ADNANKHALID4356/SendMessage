@@ -39,10 +39,7 @@ export class SegmentsController {
    */
   @Post()
   @Roles('MANAGER')
-  async create(
-    @CurrentWorkspace() workspaceId: string,
-    @Body() dto: CreateSegmentDto,
-  ) {
+  async create(@CurrentWorkspace() workspaceId: string, @Body() dto: CreateSegmentDto) {
     return this.segmentsService.create(workspaceId, dto);
   }
 
@@ -51,10 +48,7 @@ export class SegmentsController {
    */
   @Get()
   @Roles('VIEW_ONLY')
-  async findAll(
-    @CurrentWorkspace() workspaceId: string,
-    @Query() query: SegmentListQueryDto,
-  ) {
+  async findAll(@CurrentWorkspace() workspaceId: string, @Query() query: SegmentListQueryDto) {
     return this.segmentsService.findAll(workspaceId, query);
   }
 
@@ -63,10 +57,7 @@ export class SegmentsController {
    */
   @Get(':id')
   @Roles('VIEW_ONLY')
-  async findById(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async findById(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     return this.segmentsService.findById(workspaceId, id);
   }
 
@@ -89,10 +80,7 @@ export class SegmentsController {
   @Delete(':id')
   @Roles('MANAGER')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async delete(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     await this.segmentsService.delete(workspaceId, id);
   }
 
@@ -148,10 +136,7 @@ export class SegmentsController {
    */
   @Post('preview')
   @Roles('VIEW_ONLY')
-  async preview(
-    @CurrentWorkspace() workspaceId: string,
-    @Body() filters: SegmentFiltersDto,
-  ) {
+  async preview(@CurrentWorkspace() workspaceId: string, @Body() filters: SegmentFiltersDto) {
     return this.segmentsService.preview(workspaceId, filters);
   }
 
@@ -161,10 +146,7 @@ export class SegmentsController {
   @Post(':id/recalculate')
   @Roles('MANAGER')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async recalculate(
-    @CurrentWorkspace() workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async recalculate(@CurrentWorkspace() workspaceId: string, @Param('id') id: string) {
     await this.segmentsService.recalculateSegment(workspaceId, id);
   }
 

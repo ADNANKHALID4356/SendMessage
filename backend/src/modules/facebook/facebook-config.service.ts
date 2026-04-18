@@ -69,11 +69,7 @@ export class FacebookConfigService {
    * public_profile is implicitly granted and does not need to be listed.
    */
   get scopes(): string[] {
-    return [
-      'pages_messaging',
-      'pages_manage_metadata',
-      'pages_show_list',
-    ];
+    return ['pages_messaging', 'pages_manage_metadata', 'pages_show_list'];
   }
 
   get fullConfig(): FacebookConfig {

@@ -66,9 +66,9 @@ export class AssignUserDto {
   @IsString()
   userId: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Permission level',
-    enum: ['VIEW_ONLY', 'OPERATOR', 'MANAGER']
+    enum: ['VIEW_ONLY', 'OPERATOR', 'MANAGER'],
   })
   @IsString()
   permissionLevel: 'VIEW_ONLY' | 'OPERATOR' | 'MANAGER';

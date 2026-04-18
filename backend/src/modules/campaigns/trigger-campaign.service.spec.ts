@@ -78,11 +78,7 @@ describe('TriggerCampaignService', () => {
 
       await service.activateTrigger('ws1', 'c1');
 
-      expect(mockRedis.set).toHaveBeenCalledWith(
-        'trigger:active:c1',
-        expect.any(String),
-        0,
-      );
+      expect(mockRedis.set).toHaveBeenCalledWith('trigger:active:c1', expect.any(String), 0);
       expect(mockPrisma.campaign.update).toHaveBeenCalled();
     });
   });
@@ -114,10 +110,17 @@ describe('TriggerCampaignService', () => {
     it('should skip campaign if on cooldown', async () => {
       mockRedis.getClient().smembers.mockResolvedValue(['c1']);
       mockRedis.get
-        .mockResolvedValueOnce(JSON.stringify({
-          config: { conditions: [{ type: 'new_contact' }], matchAll: true, cooldownMinutes: 60, maxTriggersPerContact: 0 },
-          messageContent: { text: 'Hi' },
-        }))
+        .mockResolvedValueOnce(
+          JSON.stringify({
+            config: {
+              conditions: [{ type: 'new_contact' }],
+              matchAll: true,
+              cooldownMinutes: 60,
+              maxTriggersPerContact: 0,
+            },
+            messageContent: { text: 'Hi' },
+          }),
+        )
         .mockResolvedValueOnce('1'); // cooldown active
 
       const result = await service.evaluateContactEvent('ws1', 'contact1', 'new_contact');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -111,6 +111,7 @@ export default function CampaignCreatePage() {
   });
 
   const [stepError, setStepError] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const workspaceId = currentWorkspace?.id || '';
   const createCampaign = useCreateCampaign(workspaceId);
@@ -122,6 +123,38 @@ export default function CampaignCreatePage() {
 
   const updateForm = (updates: Partial<CampaignFormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
+  };
+
+  const insertToken = (token: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      updateForm({
+        messageContent: {
+          ...formData.messageContent,
+          text: formData.messageContent.text + ' ' + token,
+        },
+      });
+      return;
+    }
+
+    const startPos = textarea.selectionStart;
+    const endPos = textarea.selectionEnd;
+    const textBefore = formData.messageContent.text.substring(0, startPos);
+    const textAfter = formData.messageContent.text.substring(endPos, formData.messageContent.text.length);
+
+    const newText = textBefore + token + textAfter;
+    updateForm({
+      messageContent: {
+        ...formData.messageContent,
+        text: newText,
+      },
+    });
+
+    // Reset focus and caret position after state update
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(startPos + token.length, startPos + token.length);
+    }, 0);
   };
 
   const canProceed = (): boolean => {
@@ -164,24 +197,24 @@ export default function CampaignCreatePage() {
 
   const handleLaunch = async () => {
     try {
-      const campaignTypeMap: Record<CampaignType, 'broadcast' | 'otn' | 'recurring'> = {
-        ONE_TIME: 'broadcast',
-        SCHEDULED: 'broadcast',
-        RECURRING: 'recurring',
-        DRIP: 'broadcast',
-      };
-
-      await createCampaign.mutateAsync({
+      const payload = {
         name: formData.name,
         description: formData.description,
-        type: campaignTypeMap[formData.campaignType],
-        segmentId: formData.audienceSegmentId,
-        message: {
-          type: formData.messageContent.messageType || 'TEXT',
-          content: formData.messageContent.text,
+        campaignType: formData.campaignType as any,
+        audienceType: formData.audienceType as any,
+        audienceSegmentId: formData.audienceSegmentId || undefined,
+        audiencePageIds: formData.audiencePageIds,
+        messageContent: {
+          text: formData.messageContent.text,
+          attachmentUrl: formData.messageContent.attachmentUrl || undefined,
+          attachmentType: formData.messageContent.attachmentUrl ? 'image' as const : undefined,
         },
+        bypassMethod: formData.bypassMethod !== 'NONE' ? (formData.bypassMethod as any) : undefined,
+        messageTag: formData.bypassMethod === 'MESSAGE_TAG' ? (formData.messageTag as any) : undefined,
         scheduledAt: formData.scheduledAt,
-      });
+      };
+
+      await createCampaign.mutateAsync(payload);
       router.push('/campaigns');
     } catch {
       // Error handled by hook
@@ -394,6 +427,7 @@ export default function CampaignCreatePage() {
                   <Label htmlFor="message">Message Text *</Label>
                   <textarea
                     id="message"
+                    ref={textareaRef}
                     className={cn(
                       'w-full min-h-[160px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring',
                       stepError && currentStep === 2 && !formData.messageContent.text.trim() && 'border-destructive focus:ring-destructive'
@@ -410,25 +444,25 @@ export default function CampaignCreatePage() {
                     aria-invalid={!!stepError && currentStep === 2 && !formData.messageContent.text.trim()}
                   />
                   <div className="flex justify-between mt-1">
-                    <div className="flex gap-2">
-                      {['{{first_name}}', '{{last_name}}', '{{page_name}}'].map((token) => (
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { token: '{{first_name}}', label: 'First Name' },
+                        { token: '{{last_name}}', label: 'Last Name' },
+                        { token: '{{full_name}}', label: 'Full Name' },
+                        { token: '{{first_name|Friend}}', label: 'First Name (Fallback)' },
+                        { token: '{{page_name}}', label: 'Page Name' },
+                      ].map(({ token, label }) => (
                         <button
                           key={token}
-                          onClick={() =>
-                            updateForm({
-                              messageContent: {
-                                ...formData.messageContent,
-                                text: formData.messageContent.text + ' ' + token,
-                              },
-                            })
-                          }
-                          className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 text-muted-foreground"
+                          onClick={() => insertToken(token)}
+                          title={`Insert ${label}`}
+                          className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 text-muted-foreground transition-colors border border-transparent hover:border-border"
                         >
                           {token}
                         </button>
                       ))}
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground ml-4 shrink-0">
                       {formData.messageContent.text.length}/2000
                     </span>
                   </div>
@@ -442,9 +476,11 @@ export default function CampaignCreatePage() {
                       <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-none p-3 max-w-xs ml-auto">
                         <p className="text-sm whitespace-pre-wrap">
                           {formData.messageContent.text
-                            .replace('{{first_name}}', 'John')
-                            .replace('{{last_name}}', 'Doe')
-                            .replace('{{page_name}}', 'My Business')}
+                            .replace(/\{\{first_name\}\}/g, 'John')
+                            .replace(/\{\{last_name\}\}/g, 'Doe')
+                            .replace(/\{\{full_name\}\}/g, 'John Doe')
+                            .replace(/\{\{first_name\|(.*?)\}\}/g, (_, fallback) => 'John') // Shows how it evaluates when name exists
+                            .replace(/\{\{page_name\}\}/g, 'My Business')}
                         </p>
                       </div>
                     </div>

@@ -76,10 +76,7 @@ describe('BackupService', () => {
     mockPrisma.workspace.findUnique.mockResolvedValue({ id: 'ws1', name: 'Test' });
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        BackupService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [BackupService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<BackupService>(BackupService);

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { SendApiService } from './send-api.service';
@@ -62,43 +57,15 @@ export class MessagesService {
       throw new BadRequestException(rateLimitResult.reason || 'Rate limit exceeded');
     }
 
-    // Create message
-    const message = await this.prisma.message.create({
-      data: {
-        conversationId: dto.conversationId,
-        contactId: conversation.contactId,
-        pageId: conversation.pageId,
-        direction: MessageDirection.OUTBOUND,
-        messageType: dto.messageType || MessageType.TEXT,
-        content: dto.content as any,
-        status: MessageStatus.PENDING,
-      },
-    });
+    // Update contact interaction immediately
+    await this.contactsService.updateInteraction(conversation.contactId, 'outbound');
 
-    // Update conversation
-    const messagePreview =
-      dto.content.text?.substring(0, 100) || `[${dto.messageType}]`;
-
-    await this.prisma.conversation.update({
-      where: { id: dto.conversationId },
-      data: {
-        lastMessageAt: new Date(),
-        lastMessagePreview: messagePreview,
-        status: 'OPEN',
-      },
-    });
-
-    // Update contact interaction
-    await this.contactsService.updateInteraction(
-      conversation.contactId,
-      'outbound',
-    );
-
-    // Send via Facebook Send API
+    // Send via Facebook Send API (this creates the DB message, handles tokens, updates conversation)
     try {
       const sendResult = await this.sendApiService.sendMessage({
         contactId: conversation.contactId,
         pageId: conversation.pageId,
+        conversationId: dto.conversationId,
         workspaceId,
         messageType: dto.messageType || MessageType.TEXT,
         content: {
@@ -114,37 +81,16 @@ export class MessagesService {
       });
 
       if (sendResult.success) {
-        // Update message with Facebook message ID
-        const sentMessage = await this.prisma.message.update({
-          where: { id: message.id },
-          data: {
-            status: MessageStatus.SENT,
-            sentAt: new Date(),
-            fbMessageId: sendResult.fbMessageId,
-            bypassMethod: sendResult.bypassMethodUsed || null,
-          },
+        // Return the message record created by SendApiService
+        const sentMessage = await this.prisma.message.findUnique({
+          where: { id: sendResult.messageId },
         });
         return sentMessage;
       } else {
-        // Mark as failed
-        const failedMessage = await this.prisma.message.update({
-          where: { id: message.id },
-          data: {
-            status: MessageStatus.FAILED,
-            errorMessage: sendResult.error,
-          },
-        });
         throw new BadRequestException(sendResult.error || 'Failed to send message');
       }
     } catch (error) {
       this.logger.error(`Failed to send message: ${error.message}`);
-      await this.prisma.message.update({
-        where: { id: message.id },
-        data: {
-          status: MessageStatus.FAILED,
-          errorMessage: error.message,
-        },
-      });
       throw error;
     }
   }
@@ -152,11 +98,7 @@ export class MessagesService {
   /**
    * Send a quick message to a contact (creates conversation if needed)
    */
-  async sendQuickMessage(
-    workspaceId: string,
-    userId: string,
-    dto: SendQuickMessageDto,
-  ) {
+  async sendQuickMessage(workspaceId: string, userId: string, dto: SendQuickMessageDto) {
     const contact = await this.prisma.contact.findFirst({
       where: { id: dto.contactId, workspaceId },
       include: { page: true },
@@ -171,7 +113,6 @@ export class MessagesService {
       where: {
         contactId: dto.contactId,
         pageId: contact.pageId,
-        status: { not: 'RESOLVED' },
       },
     });
 
@@ -183,6 +124,12 @@ export class MessagesService {
           pageId: contact.pageId,
           status: 'OPEN',
         },
+      });
+    } else if (conversation.status === 'RESOLVED') {
+      // Reopen conversation if it was resolved
+      conversation = await this.prisma.conversation.update({
+        where: { id: conversation.id },
+        data: { status: 'OPEN' },
       });
     }
 
@@ -242,11 +189,7 @@ export class MessagesService {
   /**
    * Get all messages for a contact
    */
-  async getContactMessages(
-    workspaceId: string,
-    contactId: string,
-    query: ContactMessagesQueryDto,
-  ) {
+  async getContactMessages(workspaceId: string, contactId: string, query: ContactMessagesQueryDto) {
     const contact = await this.prisma.contact.findFirst({
       where: { id: contactId, workspaceId },
     });
@@ -354,8 +297,7 @@ export class MessagesService {
     });
 
     // Update conversation
-    const messagePreview =
-      dto.content.text?.substring(0, 100) || `[${dto.messageType}]`;
+    const messagePreview = dto.content.text?.substring(0, 100) || `[${dto.messageType}]`;
 
     await this.prisma.conversation.update({
       where: { id: conversation.id },
@@ -449,7 +391,8 @@ export class MessagesService {
         conversationId: data.conversationId,
         contactId: data.contactId,
         pageId: data.pageId,
-        direction: data.direction === 'INCOMING' ? MessageDirection.INBOUND : MessageDirection.OUTBOUND,
+        direction:
+          data.direction === 'INCOMING' ? MessageDirection.INBOUND : MessageDirection.OUTBOUND,
         messageType,
         content: content as any,
         status: MessageStatus.RECEIVED,
@@ -504,29 +447,28 @@ export class MessagesService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const [totalMessages, inboundMessages, outboundMessages, messagesByDay] =
-      await Promise.all([
-        this.prisma.message.count({
-          where: {
-            conversation: { workspaceId },
-            createdAt: { gte: startDate },
-          },
-        }),
-        this.prisma.message.count({
-          where: {
-            conversation: { workspaceId },
-            direction: MessageDirection.INBOUND,
-            createdAt: { gte: startDate },
-          },
-        }),
-        this.prisma.message.count({
-          where: {
-            conversation: { workspaceId },
-            direction: MessageDirection.OUTBOUND,
-            createdAt: { gte: startDate },
-          },
-        }),
-        this.prisma.$queryRaw`
+    const [totalMessages, inboundMessages, outboundMessages, messagesByDay] = await Promise.all([
+      this.prisma.message.count({
+        where: {
+          conversation: { workspaceId },
+          createdAt: { gte: startDate },
+        },
+      }),
+      this.prisma.message.count({
+        where: {
+          conversation: { workspaceId },
+          direction: MessageDirection.INBOUND,
+          createdAt: { gte: startDate },
+        },
+      }),
+      this.prisma.message.count({
+        where: {
+          conversation: { workspaceId },
+          direction: MessageDirection.OUTBOUND,
+          createdAt: { gte: startDate },
+        },
+      }),
+      this.prisma.$queryRaw`
           SELECT DATE(created_at) as date, COUNT(*)::int as count
           FROM messages m
           JOIN conversations c ON m.conversation_id = c.id
@@ -535,16 +477,14 @@ export class MessagesService {
           GROUP BY DATE(created_at)
           ORDER BY date DESC
         ` as Promise<Array<{ date: Date; count: number }>>,
-      ]);
+    ]);
 
     return {
       totalMessages,
       inboundMessages,
       outboundMessages,
       responseRate:
-        inboundMessages > 0
-          ? Math.round((outboundMessages / inboundMessages) * 100)
-          : 0,
+        inboundMessages > 0 ? Math.round((outboundMessages / inboundMessages) * 100) : 0,
       messagesByDay,
     };
   }

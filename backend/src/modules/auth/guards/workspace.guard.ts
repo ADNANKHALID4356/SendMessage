@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PERMISSION_KEY } from '../decorators/permission.decorator';
@@ -33,9 +28,7 @@ export class WorkspaceGuard implements CanActivate {
 
     // Get workspace ID from params, query, or header
     const workspaceId =
-      request.params.workspaceId ||
-      request.query.workspaceId ||
-      request.headers['x-workspace-id'];
+      request.params.workspaceId || request.query.workspaceId || request.headers['x-workspace-id'];
 
     if (!workspaceId) {
       throw new ForbiddenException('Workspace ID is required');

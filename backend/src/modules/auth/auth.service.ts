@@ -17,12 +17,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { AdminSignupDto } from './dto/admin-signup.dto';
 import { UserSignupDto } from './dto/user-signup.dto';
-import {
-  AuthTokens,
-  AuthUser,
-  PermissionLevel,
-  WorkspaceAccess,
-} from '@messagesender/shared';
+import { AuthTokens, AuthUser, PermissionLevel, WorkspaceAccess } from '@messagesender/shared';
 import { TIME, CACHE_KEYS, ERROR_CODES } from '@messagesender/shared';
 import { LoginRateLimitGuard } from './guards/rate-limit.guard';
 
@@ -49,18 +44,14 @@ export class AuthService {
   ) {
     this.ACCESS_TOKEN_EXPIRY = this.configService.get('JWT_EXPIRES_IN', '1h');
     this.REFRESH_TOKEN_EXPIRY = TIME.REFRESH_TOKEN_EXPIRY_SECONDS;
-    this.REFRESH_TOKEN_REMEMBER_EXPIRY =
-      TIME.REFRESH_TOKEN_REMEMBER_ME_SECONDS;
+    this.REFRESH_TOKEN_REMEMBER_EXPIRY = TIME.REFRESH_TOKEN_REMEMBER_ME_SECONDS;
   }
 
   // =====================
   // ADMIN AUTHENTICATION
   // =====================
 
-  async validateAdmin(
-    username: string,
-    password: string,
-  ): Promise<AuthUser | null> {
+  async validateAdmin(username: string, password: string): Promise<AuthUser | null> {
     const admin = await this.prisma.admin.findUnique({
       where: { username },
     });
@@ -92,7 +83,13 @@ export class AuthService {
 
     if (!admin) {
       // Record failed attempt for brute-force protection
-      await this.recordLoginAttempt(ipAddress, loginDto.username, userAgent, false, 'Invalid credentials');
+      await this.recordLoginAttempt(
+        ipAddress,
+        loginDto.username,
+        userAgent,
+        false,
+        'Invalid credentials',
+      );
       throw new UnauthorizedException({
         code: ERROR_CODES.INVALID_CREDENTIALS,
         message: 'Invalid credentials',
@@ -128,10 +125,7 @@ export class AuthService {
   // USER AUTHENTICATION
   // =====================
 
-  async validateUser(
-    email: string,
-    password: string,
-  ): Promise<AuthUser | null> {
+  async validateUser(email: string, password: string): Promise<AuthUser | null> {
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: {
@@ -157,7 +151,7 @@ export class AuthService {
         workspaceId: access.workspaceId,
         workspaceName: access.workspace.name,
         permissionLevel: access.permissionLevel as unknown as PermissionLevel,
-      })
+      }),
     );
 
     return {
@@ -179,7 +173,13 @@ export class AuthService {
 
     if (!user) {
       // Record failed attempt for brute-force protection
-      await this.recordLoginAttempt(ipAddress, loginDto.username, userAgent, false, 'Invalid credentials');
+      await this.recordLoginAttempt(
+        ipAddress,
+        loginDto.username,
+        userAgent,
+        false,
+        'Invalid credentials',
+      );
       throw new UnauthorizedException({
         code: ERROR_CODES.INVALID_CREDENTIALS,
         message: 'Invalid credentials',
@@ -282,13 +282,7 @@ export class AuthService {
     };
 
     // Create session and tokens
-    const tokens = await this.createSession(
-      admin.id,
-      true,
-      false,
-      ipAddress,
-      userAgent,
-    );
+    const tokens = await this.createSession(admin.id, true, false, ipAddress, userAgent);
 
     return {
       ...tokens,
@@ -343,13 +337,15 @@ export class AuthService {
   // ADMIN: USER MANAGEMENT
   // =====================
 
-  async getPendingUsers(): Promise<{
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string | null;
-    createdAt: Date;
-  }[]> {
+  async getPendingUsers(): Promise<
+    {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string | null;
+      createdAt: Date;
+    }[]
+  > {
     const users = await this.prisma.user.findMany({
       where: { status: 'PENDING' },
       select: {
@@ -365,16 +361,18 @@ export class AuthService {
     return users;
   }
 
-  async getAllUsers(): Promise<{
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string | null;
-    status: string;
-    createdAt: Date;
-    lastLoginAt: Date | null;
-    workspaces: { workspaceId: string; workspaceName: string; permissionLevel: string }[];
-  }[]> {
+  async getAllUsers(): Promise<
+    {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string | null;
+      status: string;
+      createdAt: Date;
+      lastLoginAt: Date | null;
+      workspaces: { workspaceId: string; workspaceName: string; permissionLevel: string }[];
+    }[]
+  > {
     const users = await this.prisma.user.findMany({
       include: {
         workspaceAccess: {
@@ -388,40 +386,48 @@ export class AuthService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return users.map((user: {
-      id: string;
-      email: string;
-      firstName: string;
-      lastName: string | null;
-      status: string;
-      createdAt: Date;
-      lastLoginAt: Date | null;
-      workspaceAccess: {
-        workspaceId: string;
-        permissionLevel: string;
-        workspace: { name: string };
-      }[];
-    }) => ({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      status: user.status,
-      createdAt: user.createdAt,
-      lastLoginAt: user.lastLoginAt,
-      workspaces: user.workspaceAccess.map((access: {
-        workspaceId: string;
-        permissionLevel: string;
-        workspace: { name: string };
+    return users.map(
+      (user: {
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string | null;
+        status: string;
+        createdAt: Date;
+        lastLoginAt: Date | null;
+        workspaceAccess: {
+          workspaceId: string;
+          permissionLevel: string;
+          workspace: { name: string };
+        }[];
       }) => ({
-        workspaceId: access.workspaceId,
-        workspaceName: access.workspace.name,
-        permissionLevel: access.permissionLevel,
-      })),
-    }));
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        status: user.status,
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+        workspaces: user.workspaceAccess.map(
+          (access: {
+            workspaceId: string;
+            permissionLevel: string;
+            workspace: { name: string };
+          }) => ({
+            workspaceId: access.workspaceId,
+            workspaceName: access.workspace.name,
+            permissionLevel: access.permissionLevel,
+          }),
+        ),
+      }),
+    );
   }
 
-  async approveUser(userId: string, workspaceId?: string, permissionLevel?: string): Promise<{ message: string }> {
+  async approveUser(
+    userId: string,
+    workspaceId?: string,
+    permissionLevel?: string,
+  ): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -629,9 +635,7 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(
-    refreshTokenDto: RefreshTokenDto,
-  ): Promise<AuthTokens> {
+  async refreshTokens(refreshTokenDto: RefreshTokenDto): Promise<AuthTokens> {
     const [sessionId, token] = refreshTokenDto.refreshToken.split(':');
 
     if (!sessionId || !token) {
@@ -684,9 +688,7 @@ export class AuthService {
     }
 
     const newRefreshToken = uuidv4();
-    const expiresAt = new Date(
-      Date.now() + this.REFRESH_TOKEN_EXPIRY * 1000,
-    );
+    const expiresAt = new Date(Date.now() + this.REFRESH_TOKEN_EXPIRY * 1000);
 
     // Update session with new refresh token
     await this.prisma.session.update({
@@ -756,14 +758,16 @@ export class AuthService {
     userId: string,
     isAdmin: boolean,
     currentSessionId: string,
-  ): Promise<{
-    id: string;
-    ipAddress: string | null;
-    userAgent: string | null;
-    createdAt: Date;
-    expiresAt: Date;
-    isCurrent: boolean;
-  }[]> {
+  ): Promise<
+    {
+      id: string;
+      ipAddress: string | null;
+      userAgent: string | null;
+      createdAt: Date;
+      expiresAt: Date;
+      isCurrent: boolean;
+    }[]
+  > {
     const sessions = await this.prisma.session.findMany({
       where: {
         ...(isAdmin ? { adminId: userId } : { userId }),
@@ -779,7 +783,7 @@ export class AuthService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return sessions.map(session => ({
+    return sessions.map((session) => ({
       ...session,
       isCurrent: session.id === currentSessionId,
     }));
@@ -847,10 +851,7 @@ export class AuthService {
       throw new UnauthorizedException('Current password is incorrect');
     }
 
-    const newPasswordHash = await bcrypt.hash(
-      changePasswordDto.newPassword,
-      this.BCRYPT_ROUNDS,
-    );
+    const newPasswordHash = await bcrypt.hash(changePasswordDto.newPassword, this.BCRYPT_ROUNDS);
 
     if (isAdmin) {
       await this.prisma.admin.update({
@@ -1046,7 +1047,7 @@ export class AuthService {
         orderBy: { sortOrder: 'asc' },
       });
 
-      const workspaces: WorkspaceAccess[] = allWorkspaces.map(w => ({
+      const workspaces: WorkspaceAccess[] = allWorkspaces.map((w) => ({
         workspaceId: w.id,
         workspaceName: w.name,
         permissionLevel: 'MANAGER' as unknown as PermissionLevel,
@@ -1080,7 +1081,7 @@ export class AuthService {
         workspaceId: access.workspaceId,
         workspaceName: access.workspace.name,
         permissionLevel: access.permissionLevel as unknown as PermissionLevel,
-      })
+      }),
     );
 
     return {

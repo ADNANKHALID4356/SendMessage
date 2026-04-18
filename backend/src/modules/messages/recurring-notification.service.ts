@@ -1,13 +1,14 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FacebookApiService } from '../facebook/facebook-api.service';
 import { EncryptionService } from '../../common/encryption.service';
-import { MessageType, MessageStatus, MessageDirection, BypassMethod, SubscriptionStatus } from '@prisma/client';
+import {
+  MessageType,
+  MessageStatus,
+  MessageDirection,
+  BypassMethod,
+  SubscriptionStatus,
+} from '@prisma/client';
 
 // ===========================================
 // Types
@@ -87,9 +88,7 @@ export class RecurringNotificationService {
 
     // Validate title
     if (title.length > this.MAX_TITLE_LENGTH) {
-      throw new BadRequestException(
-        `Title must be ${this.MAX_TITLE_LENGTH} characters or less`,
-      );
+      throw new BadRequestException(`Title must be ${this.MAX_TITLE_LENGTH} characters or less`);
     }
 
     try {
@@ -219,7 +218,6 @@ export class RecurringNotificationService {
         success: true,
         subscriptionId: subscription.id,
       };
-
     } catch (error) {
       this.logger.error('Failed to send recurring notification request:', error);
       return {
@@ -244,9 +242,7 @@ export class RecurringNotificationService {
     expiresAt: Date | null,
     payload: string,
   ): Promise<void> {
-    this.logger.log(
-      `Recurring notification opt-in: psid=${senderPsid}, frequency=${frequency}`,
-    );
+    this.logger.log(`Recurring notification opt-in: psid=${senderPsid}, frequency=${frequency}`);
 
     try {
       // Find page and contact
@@ -310,10 +306,7 @@ export class RecurringNotificationService {
         });
       }
 
-      this.logger.log(
-        `Recurring notification opt-in recorded for contact ${contact.id}`,
-      );
-
+      this.logger.log(`Recurring notification opt-in recorded for contact ${contact.id}`);
     } catch (error) {
       this.logger.error('Failed to handle recurring notification opt-in:', error);
     }
@@ -322,14 +315,8 @@ export class RecurringNotificationService {
   /**
    * Handle opt-out from webhook
    */
-  async handleOptOut(
-    fbPageId: string,
-    senderPsid: string,
-    frequency: string,
-  ): Promise<void> {
-    this.logger.log(
-      `Recurring notification opt-out: psid=${senderPsid}, frequency=${frequency}`,
-    );
+  async handleOptOut(fbPageId: string, senderPsid: string, frequency: string): Promise<void> {
+    this.logger.log(`Recurring notification opt-out: psid=${senderPsid}, frequency=${frequency}`);
 
     try {
       const page = await this.prisma.page.findFirst({
@@ -359,7 +346,6 @@ export class RecurringNotificationService {
       });
 
       this.logger.log(`Subscription cancelled for contact ${contact.id}`);
-
     } catch (error) {
       this.logger.error('Failed to handle opt-out:', error);
     }
@@ -372,15 +358,14 @@ export class RecurringNotificationService {
   /**
    * Send a message using recurring notification token
    */
-  async sendRecurringMessage(
-    options: RecurringMessageOptions,
-  ): Promise<{
+  async sendRecurringMessage(options: RecurringMessageOptions): Promise<{
     success: boolean;
     messageId?: string;
     fbMessageId?: string;
     error?: string;
   }> {
-    const { subscriptionId, pageId, workspaceId, messageContent, notificationMessagesTag } = options;
+    const { subscriptionId, pageId, workspaceId, messageContent, notificationMessagesTag } =
+      options;
 
     try {
       // Get subscription
@@ -525,7 +510,6 @@ export class RecurringNotificationService {
         messageId: message.id,
         fbMessageId: fbResponse.message_id,
       };
-
     } catch (error) {
       this.logger.error('Failed to send recurring message:', error);
       return {
@@ -542,10 +526,7 @@ export class RecurringNotificationService {
   /**
    * Get active subscriptions for a contact
    */
-  async getContactSubscriptions(
-    contactId: string,
-    pageId: string,
-  ): Promise<SubscriptionInfo[]> {
+  async getContactSubscriptions(contactId: string, pageId: string): Promise<SubscriptionInfo[]> {
     const subscriptions = await this.prisma.recurringSubscription.findMany({
       where: {
         contactId,
@@ -555,7 +536,7 @@ export class RecurringNotificationService {
       orderBy: { optedInAt: 'desc' },
     });
 
-    return subscriptions.map(s => ({
+    return subscriptions.map((s) => ({
       id: s.id,
       contactId: s.contactId,
       title: s.title || '',

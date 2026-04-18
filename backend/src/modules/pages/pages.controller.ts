@@ -11,13 +11,7 @@ import {
   HttpStatus,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -45,7 +39,7 @@ export class PagesController {
   @ApiResponse({ status: 200, description: 'List of pages' })
   async findAll(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
-    @CurrentUser() user: { id: string; role: string }
+    @CurrentUser() user: { id: string; role: string },
   ) {
     // Verify access for non-admins
     if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
@@ -67,7 +61,7 @@ export class PagesController {
   async findById(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { id: string; role: string }
+    @CurrentUser() user: { id: string; role: string },
   ) {
     if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       const hasAccess = await this.workspacesService.checkUserAccess(workspaceId, user.id);
@@ -88,7 +82,7 @@ export class PagesController {
   async getStats(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { id: string; role: string }
+    @CurrentUser() user: { id: string; role: string },
   ) {
     if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       const hasAccess = await this.workspacesService.checkUserAccess(workspaceId, user.id);
@@ -110,13 +104,13 @@ export class PagesController {
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePageDto,
-    @CurrentUser() user: { id: string; role: string }
+    @CurrentUser() user: { id: string; role: string },
   ) {
     if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       const hasAccess = await this.workspacesService.checkUserAccess(
         workspaceId,
         user.id,
-        'MANAGER'
+        'MANAGER',
       );
       if (!hasAccess) {
         return { error: 'Manager access required' };
@@ -136,13 +130,13 @@ export class PagesController {
   async deactivate(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { id: string; role: string }
+    @CurrentUser() user: { id: string; role: string },
   ) {
     if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       const hasAccess = await this.workspacesService.checkUserAccess(
         workspaceId,
         user.id,
-        'MANAGER'
+        'MANAGER',
       );
       if (!hasAccess) {
         return { error: 'Manager access required' };
@@ -161,13 +155,13 @@ export class PagesController {
   async reactivate(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { id: string; role: string }
+    @CurrentUser() user: { id: string; role: string },
   ) {
     if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       const hasAccess = await this.workspacesService.checkUserAccess(
         workspaceId,
         user.id,
-        'MANAGER'
+        'MANAGER',
       );
       if (!hasAccess) {
         return { error: 'Manager access required' };
@@ -186,13 +180,13 @@ export class PagesController {
   async sync(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { id: string; role: string }
+    @CurrentUser() user: { id: string; role: string },
   ) {
     if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       const hasAccess = await this.workspacesService.checkUserAccess(
         workspaceId,
         user.id,
-        'MANAGER'
+        'MANAGER',
       );
       if (!hasAccess) {
         return { error: 'Manager access required' };
@@ -211,13 +205,13 @@ export class PagesController {
   async validateToken(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { id: string; role: string }
+    @CurrentUser() user: { id: string; role: string },
   ) {
     if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       const hasAccess = await this.workspacesService.checkUserAccess(
         workspaceId,
         user.id,
-        'MANAGER'
+        'MANAGER',
       );
       if (!hasAccess) {
         return { error: 'Manager access required' };
@@ -236,13 +230,13 @@ export class PagesController {
   async fixWebhook(
     @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: { id: string; role: string }
+    @CurrentUser() user: { id: string; role: string },
   ) {
     if (!['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
       const hasAccess = await this.workspacesService.checkUserAccess(
         workspaceId,
         user.id,
-        'MANAGER'
+        'MANAGER',
       );
       if (!hasAccess) {
         return { error: 'Manager access required' };

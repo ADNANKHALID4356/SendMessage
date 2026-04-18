@@ -299,7 +299,7 @@ describe('envValidationSchema', () => {
         // Missing: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET
       });
       expect(error).toBeDefined();
-      const messages = error!.details.map(d => d.message);
+      const messages = error!.details.map((d) => d.message);
       expect(messages.length).toBeGreaterThanOrEqual(3);
     });
   });

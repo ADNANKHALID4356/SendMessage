@@ -29,10 +29,7 @@ describe('ReportService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ReportService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [ReportService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<ReportService>(ReportService);
@@ -76,7 +73,12 @@ describe('ReportService', () => {
 
     it('should generate contact_growth report', async () => {
       mockPrisma.contact.findMany.mockResolvedValue([
-        { id: 'ct1', source: 'ORGANIC', engagementLevel: 'ACTIVE', createdAt: new Date('2026-01-15') },
+        {
+          id: 'ct1',
+          source: 'ORGANIC',
+          engagementLevel: 'ACTIVE',
+          createdAt: new Date('2026-01-15'),
+        },
         { id: 'ct2', source: 'IMPORT', engagementLevel: 'NEW', createdAt: new Date('2026-01-16') },
       ]);
       mockPrisma.contact.count.mockResolvedValue(50);
@@ -97,19 +99,17 @@ describe('ReportService', () => {
 
     it('should generate engagement report', async () => {
       mockPrisma.message.count
-        .mockResolvedValueOnce(200)  // total
-        .mockResolvedValueOnce(80)   // inbound
-        .mockResolvedValueOnce(120)  // outbound
-        .mockResolvedValueOnce(100)  // delivered
-        .mockResolvedValueOnce(5);   // failed (compliance)
+        .mockResolvedValueOnce(200) // total
+        .mockResolvedValueOnce(80) // inbound
+        .mockResolvedValueOnce(120) // outbound
+        .mockResolvedValueOnce(100) // delivered
+        .mockResolvedValueOnce(5); // failed (compliance)
       mockPrisma.conversation.findMany.mockResolvedValue([
         { status: 'OPEN', unreadCount: 2 },
         { status: 'CLOSED', unreadCount: 0 },
       ]);
       mockPrisma.contact.count.mockResolvedValue(30);
-      mockPrisma.message.groupBy.mockResolvedValue([
-        { bypassMethod: 'OTN_TOKEN', _count: 5 },
-      ]);
+      mockPrisma.message.groupBy.mockResolvedValue([{ bypassMethod: 'OTN_TOKEN', _count: 5 }]);
 
       const result = await service.generateReport({
         workspaceId: 'ws1',
@@ -211,7 +211,12 @@ describe('ReportService', () => {
 
     it('should generate PDF for contact_growth report with daily data', async () => {
       mockPrisma.contact.findMany.mockResolvedValue([
-        { id: 'ct1', source: 'ORGANIC', engagementLevel: 'ACTIVE', createdAt: new Date('2026-01-10') },
+        {
+          id: 'ct1',
+          source: 'ORGANIC',
+          engagementLevel: 'ACTIVE',
+          createdAt: new Date('2026-01-10'),
+        },
         { id: 'ct2', source: 'AD', engagementLevel: 'NEW', createdAt: new Date('2026-01-11') },
         { id: 'ct3', source: 'ORGANIC', engagementLevel: 'NEW', createdAt: new Date('2026-01-11') },
       ]);
@@ -238,9 +243,9 @@ describe('ReportService', () => {
         { messageTag: 'CONFIRMED_EVENT_UPDATE', _count: 10 },
       ]);
       mockPrisma.message.count
-        .mockResolvedValueOnce(5)   // bypassMessages
+        .mockResolvedValueOnce(5) // bypassMessages
         .mockResolvedValueOnce(100) // totalOutbound
-        .mockResolvedValueOnce(3);  // failedMessages
+        .mockResolvedValueOnce(3); // failedMessages
 
       const result = await service.generateReport({
         workspaceId: 'ws1',

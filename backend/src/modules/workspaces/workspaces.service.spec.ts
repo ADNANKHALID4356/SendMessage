@@ -117,9 +117,7 @@ describe('WorkspacesService', () => {
     it('should throw error if max workspaces reached', async () => {
       mockPrismaService.workspace.count.mockResolvedValue(5);
 
-      await expect(
-        service.create({ name: 'New Workspace' })
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.create({ name: 'New Workspace' })).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -148,9 +146,7 @@ describe('WorkspacesService', () => {
     it('should throw NotFoundException if workspace not found', async () => {
       mockPrismaService.workspace.findUnique.mockResolvedValue(null);
 
-      await expect(service.findById('invalid-id')).rejects.toThrow(
-        NotFoundException
-      );
+      await expect(service.findById('invalid-id')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -164,9 +160,7 @@ describe('WorkspacesService', () => {
           workspace: mockWorkspace,
         },
       ];
-      mockPrismaService.workspaceUserAccess.findMany.mockResolvedValue(
-        mockAccess
-      );
+      mockPrismaService.workspaceUserAccess.findMany.mockResolvedValue(mockAccess);
 
       const result = await service.findByUser('user-1');
 
@@ -242,7 +236,7 @@ describe('WorkspacesService', () => {
         service.assignUser('workspace-1', {
           userId: 'invalid-user',
           permissionLevel: 'MANAGER',
-        })
+        }),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -257,18 +251,14 @@ describe('WorkspacesService', () => {
       });
       mockPrismaService.workspaceUserAccess.delete.mockResolvedValue({});
 
-      await expect(
-        service.removeUser('workspace-1', 'user-1')
-      ).resolves.not.toThrow();
+      await expect(service.removeUser('workspace-1', 'user-1')).resolves.not.toThrow();
     });
 
     it('should throw if user access not found', async () => {
       mockPrismaService.workspace.findUnique.mockResolvedValue(mockWorkspace);
       mockPrismaService.workspaceUserAccess.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.removeUser('workspace-1', 'user-1')
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.removeUser('workspace-1', 'user-1')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -300,11 +290,7 @@ describe('WorkspacesService', () => {
         permissionLevel: 'VIEW_ONLY',
       });
 
-      const result = await service.checkUserAccess(
-        'workspace-1',
-        'user-1',
-        'MANAGER'
-      );
+      const result = await service.checkUserAccess('workspace-1', 'user-1', 'MANAGER');
 
       expect(result).toBe(false);
     });
@@ -342,7 +328,7 @@ describe('WorkspacesService', () => {
       mockPrismaService.$transaction.mockResolvedValue([]);
 
       await expect(
-        service.reorder(['workspace-2', 'workspace-1', 'workspace-3'])
+        service.reorder(['workspace-2', 'workspace-1', 'workspace-3']),
       ).resolves.not.toThrow();
 
       expect(mockPrismaService.$transaction).toHaveBeenCalled();

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateContactDto,
@@ -192,11 +187,7 @@ export class ContactsService {
   /**
    * Update last interaction timestamp (for 24-hour window tracking)
    */
-  async updateLastInteraction(
-    contactId: string,
-    timestamp: Date,
-    direction: 'sent' | 'received',
-  ) {
+  async updateLastInteraction(contactId: string, timestamp: Date, direction: 'sent' | 'received') {
     const data: Record<string, unknown> = {
       lastInteractionAt: timestamp,
     };
@@ -345,7 +336,7 @@ export class ContactsService {
     // Add tags
     if (addTagIds && addTagIds.length > 0) {
       const tagData = contactIds.flatMap((contactId) =>
-        addTagIds.map((tagId) => ({ contactId, tagId }))
+        addTagIds.map((tagId) => ({ contactId, tagId })),
       );
       await this.prisma.contactTag.createMany({
         data: tagData,
@@ -527,12 +518,7 @@ export class ContactsService {
    * Get contact statistics for workspace
    */
   async getStats(workspaceId: string) {
-    const [
-      totalContacts,
-      subscribedContacts,
-      engagementStats,
-      recentContacts,
-    ] = await Promise.all([
+    const [totalContacts, subscribedContacts, engagementStats, recentContacts] = await Promise.all([
       this.prisma.contact.count({ where: { workspaceId } }),
       this.prisma.contact.count({ where: { workspaceId, isSubscribed: true } }),
       this.prisma.contact.groupBy({

@@ -63,9 +63,7 @@ describe('PageSyncService — @Cron Scheduling', () => {
 
     it('should have the Cron metadata on handleScheduledSync', () => {
       // Verify the method exists and is callable
-      const metadata = Reflect.getMetadataKeys(
-        PageSyncService.prototype.handleScheduledSync,
-      );
+      const metadata = Reflect.getMetadataKeys(PageSyncService.prototype.handleScheduledSync);
       // @nestjs/schedule decorates with metadata
       expect(metadata.length).toBeGreaterThan(0);
     });
@@ -121,7 +119,8 @@ describe('PageSyncService — @Cron Scheduling', () => {
     });
 
     it('should reset isSyncing flag after error', async () => {
-      jest.spyOn(service, 'syncAllPages')
+      jest
+        .spyOn(service, 'syncAllPages')
         .mockRejectedValueOnce(new Error('transient'))
         .mockResolvedValueOnce({ synced: 1, failed: 0, tokenRefreshed: 0, errors: [] });
 

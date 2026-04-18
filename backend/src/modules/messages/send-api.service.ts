@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { FacebookApiService, FacebookSendMessagePayload } from '../facebook/facebook-api.service';
@@ -146,10 +141,7 @@ export class SendApiService {
           where: {
             pageId,
             isUsed: false,
-            OR: [
-              { expiresAt: null },
-              { expiresAt: { gt: new Date() } },
-            ],
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           },
           take: 1,
         },
@@ -157,10 +149,7 @@ export class SendApiService {
           where: {
             pageId,
             status: 'ACTIVE',
-            OR: [
-              { expiresAt: null },
-              { expiresAt: { gt: new Date() } },
-            ],
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           },
           take: 1,
         },
@@ -173,8 +162,8 @@ export class SendApiService {
 
     const now = Date.now();
     const lastMessageTime = contact.lastMessageFromContactAt?.getTime() || 0;
-    const isWithin24Hours = lastMessageTime > 0 && (now - lastMessageTime) < TWENTY_FOUR_HOURS_MS;
-    const windowExpiresAt = isWithin24Hours 
+    const isWithin24Hours = lastMessageTime > 0 && now - lastMessageTime < TWENTY_FOUR_HOURS_MS;
+    const windowExpiresAt = isWithin24Hours
       ? new Date(lastMessageTime + TWENTY_FOUR_HOURS_MS)
       : null;
 
@@ -183,7 +172,7 @@ export class SendApiService {
 
     // Determine available bypass methods
     const availableBypassMethods: BypassMethod[] = [];
-    
+
     if (isWithin24Hours) {
       availableBypassMethods.push(BypassMethod.WITHIN_WINDOW);
     }
@@ -224,14 +213,7 @@ export class SendApiService {
    * Send a message with automatic bypass method selection
    */
   async sendMessage(options: SendMessageOptions): Promise<SendResult> {
-    const {
-      contactId,
-      pageId,
-      workspaceId,
-      messageType,
-      content,
-      campaignId,
-    } = options;
+    const { contactId, pageId, workspaceId, messageType, content, campaignId } = options;
 
     try {
       // Get contact and page data
@@ -268,7 +250,7 @@ export class SendApiService {
 
       // Determine bypass method
       const bypassMethod = await this.determineBypassMethod(options);
-      
+
       if (bypassMethod === BypassMethod.BLOCKED) {
         return {
           success: false,
@@ -322,10 +304,7 @@ export class SendApiService {
 
       // Send via Facebook API (decrypt the stored token first)
       const decryptedToken = this.encryption.decryptIfNeeded(page.accessToken);
-      const fbResponse = await this.facebookApi.sendMessage(
-        decryptedToken,
-        fbPayload,
-      );
+      const fbResponse = await this.facebookApi.sendMessage(decryptedToken, fbPayload);
 
       // Update message with success
       await this.prisma.message.update({
@@ -386,7 +365,6 @@ export class SendApiService {
         fbMessageId: fbResponse.message_id,
         bypassMethodUsed: bypassMethod,
       };
-
     } catch (error) {
       this.logger.error('Failed to send message:', error);
 
@@ -592,25 +570,33 @@ export class SendApiService {
     builtinTokens: Record<string, string>,
     customFields: Record<string, unknown>,
   ): string {
-    return text.replace(/\{\{([^}]+)\}\}/g, (_match, tokenExpr: string) => {
-      const [tokenKey, fallback] = tokenExpr.split('|').map((s: string) => s.trim());
-      const normalizedKey = tokenKey.toLowerCase();
+    // Add common aliases to builtinTokens
+    const extendedTokens = { ...builtinTokens };
+    if (extendedTokens['first_name'] && !extendedTokens['name']) {
+      extendedTokens['name'] = extendedTokens['first_name']; // Map {{name}} to {{first_name}}
+    }
+    
+    return text
+      .replace(/\{\{([^}]+)\}\}/g, (_match, tokenExpr: string) => {
+        const [tokenKey, fallback] = tokenExpr.split('|').map((s: string) => s.trim());
+        const normalizedKey = tokenKey.toLowerCase();
 
-      // Check built-in tokens first
-      if (normalizedKey in builtinTokens) {
-        const value = builtinTokens[normalizedKey];
-        return value || fallback || '';
-      }
+        // Check built-in tokens first
+        if (normalizedKey in extendedTokens) {
+          const value = extendedTokens[normalizedKey];
+          return value || fallback || '';
+        }
 
-      // Check custom fields
-      if (normalizedKey in customFields) {
-        const value = customFields[normalizedKey];
-        return value != null ? String(value) : (fallback || '');
-      }
+        // Check custom fields
+        if (normalizedKey in customFields) {
+          const value = customFields[normalizedKey];
+          return value != null ? String(value) : fallback || '';
+        }
 
-      // Unknown token — use fallback or empty
-      return fallback || '';
-    }).trim();
+        // Unknown token — use fallback or empty
+        return fallback || '';
+      })
+      .trim();
   }
 
   // ===========================================

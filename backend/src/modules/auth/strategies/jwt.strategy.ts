@@ -39,7 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id: payload.sub,
       userId: payload.sub,
       isAdmin: payload.isAdmin,
-      role: payload.isAdmin ? 'SUPER_ADMIN' : undefined,
+      role: payload.isAdmin ? 'SUPER_ADMIN' : 'USER',
       sessionId: payload.sessionId,
     };
   }

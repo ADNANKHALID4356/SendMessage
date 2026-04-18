@@ -117,11 +117,23 @@ export default function InboxPage() {
   const handleSendMessage = () => {
     if (!messageInput.trim() || !selectedConversationId) return;
 
+    let backendBypassMethod: string | undefined;
+    let backendMessageTag: string | undefined;
+
+    if (bypassMethod !== 'WITHIN_WINDOW') {
+      backendBypassMethod = bypassMethod;
+      if (bypassMethod.startsWith('MESSAGE_TAG_')) {
+        backendMessageTag = bypassMethod.replace('MESSAGE_TAG_', '');
+      }
+    }
+
     sendMessage.mutate(
       {
         conversationId: selectedConversationId,
         messageType: 'TEXT',
         content: { text: messageInput.trim() },
+        bypassMethod: backendBypassMethod,
+        messageTag: backendMessageTag,
       },
       {
         onSuccess: () => {
@@ -577,3 +589,6 @@ export default function InboxPage() {
     </div>
   );
 }
+
+
+

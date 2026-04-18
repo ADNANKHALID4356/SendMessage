@@ -113,7 +113,7 @@ describe('Auth Service', () => {
 
       const result = await authService.getProfile();
 
-      expect(api.get).toHaveBeenCalledWith('/auth/me');
+      expect(api.get).toHaveBeenCalledWith('/auth/me', { signal: undefined });
       expect(result).toEqual(mockProfile);
     });
   });

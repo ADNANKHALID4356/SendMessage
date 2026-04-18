@@ -158,7 +158,11 @@ export class EmailService {
         </p>
         <p style="color: #666; font-size: 14px;">This invitation will expire in 7 days.</p>
       </div>`;
-    return this.sendEmail(workspaceId, { to: inviteeEmail, subject: `You're invited to join ${workspaceName}`, html });
+    return this.sendEmail(workspaceId, {
+      to: inviteeEmail,
+      subject: `You're invited to join ${workspaceName}`,
+      html,
+    });
   }
 
   async sendPasswordReset(

@@ -173,9 +173,7 @@ describe('CampaignsService', () => {
     it('should throw NotFoundException for missing campaign', async () => {
       mockPrisma.campaign.findFirst.mockResolvedValue(null);
 
-      await expect(service.findById('ws-1', 'bad')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findById('ws-1', 'bad')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -229,9 +227,9 @@ describe('CampaignsService', () => {
         status: 'RUNNING',
       });
 
-      await expect(
-        service.update('ws-1', 'camp-1', { name: 'x' } as any),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.update('ws-1', 'camp-1', { name: 'x' } as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -253,9 +251,7 @@ describe('CampaignsService', () => {
         status: 'RUNNING',
       });
 
-      await expect(service.delete('ws-1', 'camp-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.delete('ws-1', 'camp-1')).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -285,10 +281,7 @@ describe('CampaignsService', () => {
   describe('launch', () => {
     it('should launch a DRAFT campaign with recipients', async () => {
       mockPrisma.campaign.findFirst.mockResolvedValue(baseCampaign);
-      mockPrisma.contact.findMany.mockResolvedValue([
-        { id: 'c-1' },
-        { id: 'c-2' },
-      ]);
+      mockPrisma.contact.findMany.mockResolvedValue([{ id: 'c-1' }, { id: 'c-2' }]);
       mockPrisma.page.findFirst.mockResolvedValue({ id: 'p-1' });
       mockPrisma.campaign.update.mockResolvedValue({
         ...baseCampaign,
@@ -307,9 +300,7 @@ describe('CampaignsService', () => {
         totalRecipients: 0,
       });
 
-      await expect(service.launch('ws-1', 'camp-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.launch('ws-1', 'camp-1')).rejects.toThrow(BadRequestException);
     });
 
     it('should throw when no page available', async () => {
@@ -317,9 +308,7 @@ describe('CampaignsService', () => {
       mockPrisma.contact.findMany.mockResolvedValue([{ id: 'c-1' }]);
       mockPrisma.page.findFirst.mockResolvedValue(null);
 
-      await expect(service.launch('ws-1', 'camp-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.launch('ws-1', 'camp-1')).rejects.toThrow(BadRequestException);
     });
 
     it('should throw when launching non-DRAFT/SCHEDULED campaign', async () => {
@@ -328,9 +317,7 @@ describe('CampaignsService', () => {
         status: 'COMPLETED',
       });
 
-      await expect(service.launch('ws-1', 'camp-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.launch('ws-1', 'camp-1')).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -356,9 +343,9 @@ describe('CampaignsService', () => {
       mockPrisma.campaign.findFirst.mockResolvedValue(baseCampaign);
       const pastDate = new Date(Date.now() - 86400000);
 
-      await expect(
-        service.schedule('ws-1', 'camp-1', pastDate),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.schedule('ws-1', 'camp-1', pastDate)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -385,9 +372,7 @@ describe('CampaignsService', () => {
     it('should throw when pausing non-RUNNING campaign', async () => {
       mockPrisma.campaign.findFirst.mockResolvedValue(baseCampaign); // DRAFT
 
-      await expect(service.pause('ws-1', 'camp-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.pause('ws-1', 'camp-1')).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -428,9 +413,7 @@ describe('CampaignsService', () => {
     it('should throw when cancelling DRAFT campaign', async () => {
       mockPrisma.campaign.findFirst.mockResolvedValue(baseCampaign); // DRAFT
 
-      await expect(service.cancel('ws-1', 'camp-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.cancel('ws-1', 'camp-1')).rejects.toThrow(BadRequestException);
     });
   });
 

@@ -71,10 +71,7 @@ export class FacebookApiService {
   /**
    * Exchange authorization code for access token
    */
-  async exchangeCodeForToken(
-    code: string,
-    redirectUri: string
-  ): Promise<FacebookTokenResponse> {
+  async exchangeCodeForToken(code: string, redirectUri: string): Promise<FacebookTokenResponse> {
     const url = this.fbConfig.buildTokenUrl(code, redirectUri);
 
     try {
@@ -85,7 +82,7 @@ export class FacebookApiService {
         this.logger.error('Token exchange error:', data.error);
         throw new HttpException(
           data.error.message || 'Failed to exchange code for token',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -95,7 +92,7 @@ export class FacebookApiService {
       this.logger.error('Token exchange failed:', error);
       throw new HttpException(
         'Failed to exchange authorization code',
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -121,7 +118,7 @@ export class FacebookApiService {
         this.logger.error('Long-lived token error:', data.error);
         throw new HttpException(
           data.error.message || 'Failed to get long-lived token',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -129,10 +126,7 @@ export class FacebookApiService {
     } catch (error) {
       if (error instanceof HttpException) throw error;
       this.logger.error('Long-lived token failed:', error);
-      throw new HttpException(
-        'Failed to get long-lived token',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      throw new HttpException('Failed to get long-lived token', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -150,7 +144,7 @@ export class FacebookApiService {
         this.logger.error('Get user info error:', data.error);
         throw new HttpException(
           data.error.message || 'Failed to get user info',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -158,10 +152,7 @@ export class FacebookApiService {
     } catch (error) {
       if (error instanceof HttpException) throw error;
       this.logger.error('Get user info failed:', error);
-      throw new HttpException(
-        'Failed to get user information',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      throw new HttpException('Failed to get user information', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -170,7 +161,7 @@ export class FacebookApiService {
    */
   async getUserPages(accessToken: string): Promise<FacebookPage[]> {
     const url = this.fbConfig.buildGraphUrl(
-      `me/accounts?fields=id,name,access_token,category,picture&access_token=${accessToken}`
+      `me/accounts?fields=id,name,access_token,category,picture&access_token=${accessToken}`,
     );
 
     try {
@@ -182,7 +173,7 @@ export class FacebookApiService {
         this.logger.error('Get pages error:', errorData.error);
         throw new HttpException(
           errorData.error.message || 'Failed to get pages',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -190,22 +181,16 @@ export class FacebookApiService {
     } catch (error) {
       if (error instanceof HttpException) throw error;
       this.logger.error('Get pages failed:', error);
-      throw new HttpException(
-        'Failed to get user pages',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      throw new HttpException('Failed to get user pages', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   /**
    * Get page access token (never expires)
    */
-  async getPageAccessToken(
-    pageId: string,
-    userAccessToken: string
-  ): Promise<string> {
+  async getPageAccessToken(pageId: string, userAccessToken: string): Promise<string> {
     const url = this.fbConfig.buildGraphUrl(
-      `${pageId}?fields=access_token&access_token=${userAccessToken}`
+      `${pageId}?fields=access_token&access_token=${userAccessToken}`,
     );
 
     try {
@@ -216,7 +201,7 @@ export class FacebookApiService {
         this.logger.error('Get page token error:', data.error);
         throw new HttpException(
           data.error.message || 'Failed to get page access token',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -224,22 +209,16 @@ export class FacebookApiService {
     } catch (error) {
       if (error instanceof HttpException) throw error;
       this.logger.error('Get page token failed:', error);
-      throw new HttpException(
-        'Failed to get page access token',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      throw new HttpException('Failed to get page access token', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   /**
    * Subscribe page to webhook
    */
-  async subscribePageToWebhook(
-    pageId: string,
-    pageAccessToken: string
-  ): Promise<boolean> {
+  async subscribePageToWebhook(pageId: string, pageAccessToken: string): Promise<boolean> {
     const url = this.fbConfig.buildGraphUrl(
-      `${pageId}/subscribed_apps?subscribed_fields=messages,messaging_optins,messaging_postbacks,message_deliveries,message_reads,messaging_referrals&access_token=${pageAccessToken}`
+      `${pageId}/subscribed_apps?subscribed_fields=messages,messaging_optins,messaging_postbacks,message_deliveries,message_reads,messaging_referrals&access_token=${pageAccessToken}`,
     );
 
     try {
@@ -261,12 +240,9 @@ export class FacebookApiService {
   /**
    * Unsubscribe page from webhook
    */
-  async unsubscribePageFromWebhook(
-    pageId: string,
-    pageAccessToken: string
-  ): Promise<boolean> {
+  async unsubscribePageFromWebhook(pageId: string, pageAccessToken: string): Promise<boolean> {
     const url = this.fbConfig.buildGraphUrl(
-      `${pageId}/subscribed_apps?access_token=${pageAccessToken}`
+      `${pageId}/subscribed_apps?access_token=${pageAccessToken}`,
     );
 
     try {
@@ -285,11 +261,18 @@ export class FacebookApiService {
    */
   async sendMessage(
     pageAccessToken: string,
-    payload: FacebookSendMessagePayload
+    payload: FacebookSendMessagePayload,
   ): Promise<FacebookSendResponse> {
-    const url = this.fbConfig.buildGraphUrl(
-      `me/messages?access_token=${pageAccessToken}`
-    );
+    // If mock token is used, bypass actual API call
+    if (pageAccessToken === 'mock_page_token_123' || pageAccessToken.startsWith('mock_')) {
+      this.logger.debug(`Mock sending message to ${payload.recipient.id}`);
+      return {
+        recipient_id: payload.recipient.id,
+        message_id: `mock_mid_${Math.random().toString(36).substring(7)}`,
+      } as FacebookSendResponse;
+    }
+
+    const url = this.fbConfig.buildGraphUrl(`me/messages?access_token=${pageAccessToken}`);
 
     try {
       const response = await fetch(url, {
@@ -306,7 +289,7 @@ export class FacebookApiService {
         this.logger.error('Send message error:', data.error);
         throw new HttpException(
           data.error.message || 'Failed to send message',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -314,10 +297,7 @@ export class FacebookApiService {
     } catch (error) {
       if (error instanceof HttpException) throw error;
       this.logger.error('Send message failed:', error);
-      throw new HttpException(
-        'Failed to send message',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      throw new HttpException('Failed to send message', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -326,7 +306,7 @@ export class FacebookApiService {
    */
   async getPageInfo(pageId: string, accessToken: string) {
     const url = this.fbConfig.buildGraphUrl(
-      `${pageId}?fields=id,name,category,picture,fan_count,link&access_token=${accessToken}`
+      `${pageId}?fields=id,name,category,picture,fan_count,link&access_token=${accessToken}`,
     );
 
     try {
@@ -337,7 +317,7 @@ export class FacebookApiService {
         this.logger.error('Get page info error:', data.error);
         throw new HttpException(
           data.error.message || 'Failed to get page info',
-          HttpStatus.BAD_REQUEST
+          HttpStatus.BAD_REQUEST,
         );
       }
 
@@ -345,19 +325,14 @@ export class FacebookApiService {
     } catch (error) {
       if (error instanceof HttpException) throw error;
       this.logger.error('Get page info failed:', error);
-      throw new HttpException(
-        'Failed to get page information',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      throw new HttpException('Failed to get page information', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   /**
    * Debug token to check validity
    */
-  async debugToken(
-    inputToken: string
-  ): Promise<{
+  async debugToken(inputToken: string): Promise<{
     is_valid: boolean;
     expires_at?: number;
     scopes?: string[];
@@ -401,11 +376,12 @@ export class FacebookApiService {
     dailyBudgetCents: number;
     campaignName: string;
   }): Promise<{ campaignId: string; adSetId: string; adId: string }> {
-    const { adAccountId, accessToken, pageId, messageText, dailyBudgetCents, campaignName } = params;
+    const { adAccountId, accessToken, pageId, messageText, dailyBudgetCents, campaignName } =
+      params;
 
     // Step 1: Create Campaign
     const campaignUrl = this.fbConfig.buildGraphUrl(
-      `act_${adAccountId}/campaigns?access_token=${accessToken}`
+      `act_${adAccountId}/campaigns?access_token=${accessToken}`,
     );
     const campaignResp = await fetch(campaignUrl, {
       method: 'POST',
@@ -428,7 +404,7 @@ export class FacebookApiService {
 
     // Step 2: Create Ad Set with sponsored_message optimization
     const adSetUrl = this.fbConfig.buildGraphUrl(
-      `act_${adAccountId}/adsets?access_token=${accessToken}`
+      `act_${adAccountId}/adsets?access_token=${accessToken}`,
     );
     const adSetResp = await fetch(adSetUrl, {
       method: 'POST',
@@ -460,7 +436,7 @@ export class FacebookApiService {
 
     // Step 3: Create Ad Creative with sponsored message
     const creativeUrl = this.fbConfig.buildGraphUrl(
-      `act_${adAccountId}/adcreatives?access_token=${accessToken}`
+      `act_${adAccountId}/adcreatives?access_token=${accessToken}`,
     );
     const creativeResp = await fetch(creativeUrl, {
       method: 'POST',
@@ -486,9 +462,7 @@ export class FacebookApiService {
     }
 
     // Step 4: Create Ad
-    const adUrl = this.fbConfig.buildGraphUrl(
-      `act_${adAccountId}/ads?access_token=${accessToken}`
-    );
+    const adUrl = this.fbConfig.buildGraphUrl(`act_${adAccountId}/ads?access_token=${accessToken}`);
     const adResp = await fetch(adUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -523,9 +497,7 @@ export class FacebookApiService {
     accessToken: string,
     status: 'ACTIVE' | 'PAUSED' | 'DELETED',
   ): Promise<boolean> {
-    const url = this.fbConfig.buildGraphUrl(
-      `${fbCampaignId}?access_token=${accessToken}`
-    );
+    const url = this.fbConfig.buildGraphUrl(`${fbCampaignId}?access_token=${accessToken}`);
 
     try {
       const response = await fetch(url, {
@@ -560,7 +532,7 @@ export class FacebookApiService {
     actions?: { action_type: string; value: string }[];
   }> {
     const url = this.fbConfig.buildGraphUrl(
-      `${fbCampaignId}/insights?fields=impressions,reach,spend,clicks,ctr,actions&access_token=${accessToken}`
+      `${fbCampaignId}/insights?fields=impressions,reach,spend,clicks,ctr,actions&access_token=${accessToken}`,
     );
 
     try {

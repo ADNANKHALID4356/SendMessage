@@ -67,10 +67,7 @@ export class RateLimitService {
   /**
    * Check if action is allowed under rate limit
    */
-  async checkRateLimit(
-    type: string,
-    identifier: string,
-  ): Promise<RateLimitStatus> {
+  async checkRateLimit(type: string, identifier: string): Promise<RateLimitStatus> {
     const config = this.LIMITS[type];
     if (!config) {
       // Unknown type - allow by default
@@ -87,7 +84,7 @@ export class RateLimitService {
 
     try {
       const client = this.redis.getClient();
-      
+
       // Get current count
       const countStr = await client.get(key);
       const currentCount = countStr ? parseInt(countStr, 10) : 0;
@@ -104,9 +101,8 @@ export class RateLimitService {
         remaining,
         limit: config.limit,
         resetAt,
-        waitTimeMs: allowed ? 0 : (ttl > 0 ? ttl * 1000 : config.windowMs),
+        waitTimeMs: allowed ? 0 : ttl > 0 ? ttl * 1000 : config.windowMs,
       };
-
     } catch (error) {
       this.logger.error(`Rate limit check failed for ${type}:${identifier}`, error);
       // On error, allow the request (fail open)
@@ -151,9 +147,9 @@ export class RateLimitService {
       const pipeline = client.multi();
       pipeline.incrby(key, amount);
       pipeline.ttl(key);
-      
+
       const results = await pipeline.exec();
-      
+
       if (!results) {
         throw new Error('Redis MULTI failed');
       }
@@ -181,9 +177,8 @@ export class RateLimitService {
         remaining: allowed ? remaining : 0,
         limit: config.limit,
         resetAt,
-        waitTimeMs: allowed ? 0 : (ttl > 0 ? ttl * 1000 : config.windowMs),
+        waitTimeMs: allowed ? 0 : ttl > 0 ? ttl * 1000 : config.windowMs,
       };
-
     } catch (error) {
       this.logger.error(`Rate limit increment failed for ${type}:${identifier}`, error);
       return {

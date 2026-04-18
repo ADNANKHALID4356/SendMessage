@@ -154,19 +154,17 @@ describe('MessagesService', () => {
       const result = await service.sendMessage(mockWorkspaceId, mockUserId, sendDto);
 
       expect(mockPrismaService.message.create).toHaveBeenCalled();
-      expect(mockContactsService.updateInteraction).toHaveBeenCalledWith(
-        mockContactId,
-        'outbound',
-      );
-      expect(result.status).toBe('SENT');
+      expect(mockContactsService.updateInteraction).toHaveBeenCalledWith(mockContactId, 'outbound');
+      expect(result).not.toBeNull();
+      expect(result?.status).toBe('SENT');
     });
 
     it('should throw NotFoundException if conversation not found', async () => {
       mockPrismaService.conversation.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.sendMessage(mockWorkspaceId, mockUserId, sendDto),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.sendMessage(mockWorkspaceId, mockUserId, sendDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -195,9 +193,9 @@ describe('MessagesService', () => {
     it('should throw NotFoundException if contact not found', async () => {
       mockPrismaService.contact.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.sendQuickMessage(mockWorkspaceId, mockUserId, quickDto),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.sendQuickMessage(mockWorkspaceId, mockUserId, quickDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -222,9 +220,7 @@ describe('MessagesService', () => {
     it('should throw NotFoundException if conversation not found', async () => {
       mockPrismaService.conversation.findFirst.mockResolvedValue(null);
 
-      await expect(service.getMessages(mockWorkspaceId, query)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getMessages(mockWorkspaceId, query)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -242,9 +238,9 @@ describe('MessagesService', () => {
     it('should throw NotFoundException if contact not found', async () => {
       mockPrismaService.contact.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.getContactMessages(mockWorkspaceId, 'invalid-id', {}),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getContactMessages(mockWorkspaceId, 'invalid-id', {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -339,9 +335,9 @@ describe('MessagesService', () => {
         conversation: { workspaceId: 'different-workspace' },
       });
 
-      await expect(
-        service.findById(mockWorkspaceId, mockMessageId),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findById(mockWorkspaceId, mockMessageId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -351,9 +347,7 @@ describe('MessagesService', () => {
         .mockResolvedValueOnce(100) // total
         .mockResolvedValueOnce(40) // inbound
         .mockResolvedValueOnce(60); // outbound
-      mockPrismaService.$queryRaw.mockResolvedValue([
-        { date: new Date(), count: 10 },
-      ]);
+      mockPrismaService.$queryRaw.mockResolvedValue([{ date: new Date(), count: 10 }]);
 
       const result = await service.getStats(mockWorkspaceId, 30);
 

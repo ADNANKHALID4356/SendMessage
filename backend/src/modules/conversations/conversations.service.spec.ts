@@ -72,10 +72,7 @@ describe('ConversationsService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ConversationsService,
-        { provide: PrismaService, useValue: mockPrismaService },
-      ],
+      providers: [ConversationsService, { provide: PrismaService, useValue: mockPrismaService }],
     }).compile();
 
     service = module.get<ConversationsService>(ConversationsService);
@@ -156,13 +153,9 @@ describe('ConversationsService', () => {
     it('should return conversation with messages', async () => {
       const conversationWithMessages = {
         ...mockConversation,
-        messages: [
-          { id: 'msg-1', content: { text: 'Hello' }, createdAt: new Date() },
-        ],
+        messages: [{ id: 'msg-1', content: { text: 'Hello' }, createdAt: new Date() }],
       };
-      mockPrismaService.conversation.findFirst.mockResolvedValue(
-        conversationWithMessages,
-      );
+      mockPrismaService.conversation.findFirst.mockResolvedValue(conversationWithMessages);
 
       const result = await service.findById(mockWorkspaceId, mockConversationId);
 
@@ -173,9 +166,9 @@ describe('ConversationsService', () => {
     it('should throw NotFoundException if conversation not found', async () => {
       mockPrismaService.conversation.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.findById(mockWorkspaceId, 'invalid-id'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findById(mockWorkspaceId, 'invalid-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -208,9 +201,9 @@ describe('ConversationsService', () => {
     it('should throw NotFoundException if contact not found', async () => {
       mockPrismaService.contact.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.create(mockWorkspaceId, { contactId: 'invalid-id' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.create(mockWorkspaceId, { contactId: 'invalid-id' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -262,11 +255,7 @@ describe('ConversationsService', () => {
         assignedTo: { id: mockUserId, firstName: 'Test', lastName: 'User' },
       });
 
-      const result = await service.assign(
-        mockWorkspaceId,
-        mockConversationId,
-        mockUserId,
-      );
+      const result = await service.assign(mockWorkspaceId, mockConversationId, mockUserId);
 
       expect(result.assignedToUserId).toBe(mockUserId);
     });
@@ -303,9 +292,7 @@ describe('ConversationsService', () => {
 
   describe('bulkUpdate', () => {
     it('should bulk update conversations', async () => {
-      mockPrismaService.conversation.findMany.mockResolvedValue([
-        mockConversation,
-      ]);
+      mockPrismaService.conversation.findMany.mockResolvedValue([mockConversation]);
       mockPrismaService.conversation.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.bulkUpdate(mockWorkspaceId, {

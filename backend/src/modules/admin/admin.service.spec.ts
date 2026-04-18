@@ -28,10 +28,7 @@ describe('AdminService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AdminService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [AdminService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<AdminService>(AdminService);
@@ -131,9 +128,7 @@ describe('AdminService', () => {
     it('should not throw if logging fails', async () => {
       mockPrisma.activityLog.create.mockRejectedValue(new Error('DB error'));
       // Should NOT throw
-      await expect(
-        service.logActivity({ action: 'failure' }),
-      ).resolves.toBeUndefined();
+      await expect(service.logActivity({ action: 'failure' })).resolves.toBeUndefined();
     });
   });
 
@@ -194,17 +189,17 @@ describe('AdminService', () => {
   describe('getDashboardStats', () => {
     it('should return all system-wide stats', async () => {
       mockPrisma.workspace.count
-        .mockResolvedValueOnce(5)  // total
+        .mockResolvedValueOnce(5) // total
         .mockResolvedValueOnce(4); // active
       mockPrisma.user.count
-        .mockResolvedValueOnce(20)  // total members
-        .mockResolvedValueOnce(18)  // active members
-        .mockResolvedValueOnce(2);  // pending invitations
+        .mockResolvedValueOnce(20) // total members
+        .mockResolvedValueOnce(18) // active members
+        .mockResolvedValueOnce(2); // pending invitations
       mockPrisma.contact.count.mockResolvedValue(500);
       mockPrisma.message.count.mockResolvedValue(5000);
       mockPrisma.campaign.count.mockResolvedValue(15);
       mockPrisma.page.count
-        .mockResolvedValueOnce(8)  // total
+        .mockResolvedValueOnce(8) // total
         .mockResolvedValueOnce(6); // active
 
       const result = await service.getDashboardStats();

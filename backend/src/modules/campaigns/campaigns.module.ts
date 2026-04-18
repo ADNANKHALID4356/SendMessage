@@ -9,11 +9,7 @@ import { MessagesModule } from '../messages/messages.module';
 import { RedisModule } from '../../redis/redis.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    MessagesModule,
-    RedisModule,
-  ],
+  imports: [PrismaModule, MessagesModule, RedisModule],
   controllers: [CampaignsController],
   providers: [CampaignsService, DripCampaignService, AbTestingService, TriggerCampaignService],
   exports: [CampaignsService, DripCampaignService, AbTestingService, TriggerCampaignService],
