@@ -226,7 +226,11 @@ export function useInitiateFacebookOAuth(
   options?: Omit<UseMutationOptions<{ authUrl: string }, ApiError, string>, 'mutationFn'>
 ) {
   return useMutation({
-    mutationFn: (workspaceId: string) => facebookService.initiateOAuth(workspaceId),
+    mutationFn: (workspaceId: string) => {
+      // Ensure backend callback redirects back to the *actual* running frontend origin (3000/3001/3002...)
+      const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
+      return facebookService.initiateOAuth(workspaceId, origin);
+    },
     ...options,
   });
 }

@@ -1,28 +1,25 @@
 /// <reference types="jest" />
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const request = require('supertest');
-import { AppModule } from '../src/app.module';
+import { createE2eNestApp } from './e2e-bootstrap';
+
+const API = '/api/v1';
 
 describe('Auth (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication | undefined;
 
   beforeAll(async () => {
-    // Skip if no database connection (for CI environments without DB)
-    if (!process.env.DATABASE_URL || process.env.SKIP_E2E_TESTS === 'true') {
-      console.log('Skipping E2E tests - no database connection');
+    if (process.env.SKIP_E2E_TESTS === 'true' || !process.env.DATABASE_URL) {
+      // eslint-disable-next-line no-console
+      console.log(
+        'Skipping E2E — set DATABASE_URL (+ Redis/JWT/encryption env) and unset SKIP_E2E_TESTS to run',
+      );
       return;
     }
 
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-    await app.init();
-  }, 30000);
+    app = await createE2eNestApp();
+  }, 60000);
 
   afterAll(async () => {
     if (app) {
@@ -35,7 +32,7 @@ describe('Auth (e2e)', () => {
       if (!app) return;
 
       return request(app.getHttpServer())
-        .post('/auth/login')
+        .post(`${API}/auth/login`)
         .send({
           username: 'nonexistent@example.com',
           password: 'wrongpassword',
@@ -46,7 +43,7 @@ describe('Auth (e2e)', () => {
     it('should require username and password', async () => {
       if (!app) return;
 
-      return request(app.getHttpServer()).post('/auth/login').send({}).expect(400);
+      return request(app.getHttpServer()).post(`${API}/auth/login`).send({}).expect(400);
     });
   });
 
@@ -55,7 +52,7 @@ describe('Auth (e2e)', () => {
       if (!app) return;
 
       return request(app.getHttpServer())
-        .post('/auth/admin/login')
+        .post(`${API}/auth/admin/login`)
         .send({
           username: 'nonexistent',
           password: 'wrongpassword',
@@ -68,14 +65,14 @@ describe('Auth (e2e)', () => {
     it('should return 401 without auth token', async () => {
       if (!app) return;
 
-      return request(app.getHttpServer()).get('/auth/me').expect(401);
+      return request(app.getHttpServer()).get(`${API}/auth/me`).expect(401);
     });
 
     it('should return 401 with invalid token', async () => {
       if (!app) return;
 
       return request(app.getHttpServer())
-        .get('/auth/me')
+        .get(`${API}/auth/me`)
         .set('Authorization', 'Bearer invalid-token')
         .expect(401);
     });
@@ -86,7 +83,7 @@ describe('Auth (e2e)', () => {
       if (!app) return;
 
       return request(app.getHttpServer())
-        .post('/auth/refresh')
+        .post(`${API}/auth/refresh`)
         .send({ refreshToken: 'invalid-refresh-token' })
         .expect(401);
     });
@@ -96,7 +93,7 @@ describe('Auth (e2e)', () => {
     it('should return 401 without auth token', async () => {
       if (!app) return;
 
-      return request(app.getHttpServer()).post('/auth/logout').expect(401);
+      return request(app.getHttpServer()).post(`${API}/auth/logout`).expect(401);
     });
   });
 
@@ -105,7 +102,7 @@ describe('Auth (e2e)', () => {
       if (!app) return;
 
       return request(app.getHttpServer())
-        .post('/auth/change-password')
+        .post(`${API}/auth/change-password`)
         .send({
           currentPassword: 'oldPassword',
           newPassword: 'newPassword',

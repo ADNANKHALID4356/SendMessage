@@ -24,7 +24,7 @@ describe('SponsoredMessageService', () => {
   };
 
   const mockPrisma = {
-    page: { findUnique: jest.fn() },
+    page: { findFirst: jest.fn() },
     contact: { count: jest.fn() },
     systemSetting: {
       findUnique: jest.fn(),
@@ -70,7 +70,7 @@ describe('SponsoredMessageService', () => {
 
   describe('createSponsoredCampaign', () => {
     it('should create a draft sponsored campaign', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue({ id: 'page1', fbPageId: 'fb123' });
+      mockPrisma.page.findFirst.mockResolvedValue({ id: 'page1', fbPageId: 'fb123' });
       mockPrisma.contact.count.mockResolvedValue(150);
 
       const campaign = await service.createSponsoredCampaign({
@@ -86,10 +86,16 @@ describe('SponsoredMessageService', () => {
       expect(campaign.budgetCents).toBe(3500); // 500 * 7
       expect(campaign.durationDays).toBe(7);
       expect(campaign.estimatedReach).toBe(150);
+      expect(mockPrisma.page.findFirst).toHaveBeenCalledWith({
+        where: { id: 'page1', workspaceId: 'ws1' },
+      });
+      expect(mockPrisma.contact.count).toHaveBeenCalledWith({
+        where: { pageId: 'page1', workspaceId: 'ws1' },
+      });
     });
 
     it('should throw for non-existent page', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue(null);
+      mockPrisma.page.findFirst.mockResolvedValue(null);
 
       await expect(
         service.createSponsoredCampaign({
@@ -103,7 +109,7 @@ describe('SponsoredMessageService', () => {
     });
 
     it('should use target contact count when provided', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue({ id: 'page1' });
+      mockPrisma.page.findFirst.mockResolvedValue({ id: 'page1' });
 
       const campaign = await service.createSponsoredCampaign({
         pageId: 'page1',
@@ -120,7 +126,7 @@ describe('SponsoredMessageService', () => {
 
   describe('submitForReview', () => {
     it('should transition draft to pending_review', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue({
+      mockPrisma.page.findFirst.mockResolvedValue({
         id: 'page1',
         fbPageId: 'fb_page_1',
         accessToken: 'enc_tok',
@@ -147,7 +153,7 @@ describe('SponsoredMessageService', () => {
     });
 
     it('should still submit even if FB ad creation fails', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue({
+      mockPrisma.page.findFirst.mockResolvedValue({
         id: 'page1',
         fbPageId: 'fb_page_1',
         accessToken: 'enc_tok',
@@ -169,7 +175,7 @@ describe('SponsoredMessageService', () => {
     });
 
     it('should throw for non-draft campaigns', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue({
+      mockPrisma.page.findFirst.mockResolvedValue({
         id: 'page1',
         fbPageId: 'fb_page_1',
         accessToken: 'enc_tok',
@@ -197,7 +203,7 @@ describe('SponsoredMessageService', () => {
 
   describe('getCampaignStats', () => {
     it('should return FB insights when fbCampaignId exists', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue({
+      mockPrisma.page.findFirst.mockResolvedValue({
         id: 'page1',
         fbPageId: 'fb_page_1',
         accessToken: 'enc_tok',
@@ -240,7 +246,7 @@ describe('SponsoredMessageService', () => {
     });
 
     it('should return zeros when no fbCampaignId', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue({ id: 'page1' });
+      mockPrisma.page.findFirst.mockResolvedValue({ id: 'page1' });
       mockPrisma.contact.count.mockResolvedValue(10);
 
       const campaign = await service.createSponsoredCampaign({
@@ -265,7 +271,7 @@ describe('SponsoredMessageService', () => {
 
   describe('listCampaigns', () => {
     it('should list campaigns for a workspace', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue({ id: 'page1' });
+      mockPrisma.page.findFirst.mockResolvedValue({ id: 'page1' });
       mockPrisma.contact.count.mockResolvedValue(10);
 
       await service.createSponsoredCampaign({
@@ -290,7 +296,7 @@ describe('SponsoredMessageService', () => {
 
   describe('deleteCampaign', () => {
     it('should delete draft campaign', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue({ id: 'page1' });
+      mockPrisma.page.findFirst.mockResolvedValue({ id: 'page1' });
       mockPrisma.contact.count.mockResolvedValue(10);
 
       const campaign = await service.createSponsoredCampaign({
@@ -306,7 +312,7 @@ describe('SponsoredMessageService', () => {
     });
 
     it('should prevent deleting non-draft campaigns', async () => {
-      mockPrisma.page.findUnique.mockResolvedValue({ id: 'page1' });
+      mockPrisma.page.findFirst.mockResolvedValue({ id: 'page1' });
       mockPrisma.contact.count.mockResolvedValue(10);
 
       const campaign = await service.createSponsoredCampaign({

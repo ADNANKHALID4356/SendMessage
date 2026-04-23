@@ -35,6 +35,9 @@ export class FacebookService {
    * Initiate OAuth flow - generate authorization URL
    */
   async initiateOAuth(dto: InitiateOAuthDto, userId: string): Promise<string> {
+    // Fail fast with a clear error if env isn't configured
+    this.fbConfig.assertConfigured();
+
     // Verify workspace exists
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: dto.workspaceId },

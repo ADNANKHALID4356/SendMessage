@@ -2,16 +2,22 @@
  * @jest-environment jsdom
  */
 
+jest.mock('../lib/api-client');
+
+const mockShouldUseTenantScopedApi = jest.fn(() => false);
+jest.mock('@/lib/tenant-api-paths', () => ({
+  shouldUseTenantScopedApi: () => mockShouldUseTenantScopedApi(),
+}));
+
 import { facebookService } from './facebook.service';
 import api from '../lib/api-client';
 
-// Mock the API client
-jest.mock('../lib/api-client');
 const mockedApi = api as jest.Mocked<typeof api>;
 
 describe('FacebookService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockShouldUseTenantScopedApi.mockImplementation(() => false);
   });
 
   describe('initiateOAuth', () => {
@@ -148,6 +154,30 @@ describe('FacebookService', () => {
 
       expect(mockedApi.post).toHaveBeenCalledWith('/facebook/accounts/fb-account-1/refresh');
       expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('tenant-first paths (subdomain tenant)', () => {
+    beforeEach(() => {
+      mockShouldUseTenantScopedApi.mockImplementation(() => true);
+    });
+
+    afterEach(() => {
+      mockShouldUseTenantScopedApi.mockImplementation(() => false);
+    });
+
+    it('getConnectionStatus uses /tenant/facebook/status', async () => {
+      mockedApi.get.mockResolvedValue({ connected: false, account: null, pages: [] });
+      await facebookService.getConnectionStatus('ignored');
+      expect(mockedApi.get).toHaveBeenCalledWith('/tenant/facebook/status');
+    });
+
+    it('initiateOAuth uses tenant endpoint without workspaceId in body', async () => {
+      mockedApi.post.mockResolvedValue({ authUrl: 'https://fb' });
+      await facebookService.initiateOAuth('ignored', 'http://cb');
+      expect(mockedApi.post).toHaveBeenCalledWith('/tenant/facebook/oauth/initiate', {
+        redirectUrl: 'http://cb',
+      });
     });
   });
 });

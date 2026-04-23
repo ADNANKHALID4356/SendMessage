@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -29,6 +29,7 @@ import {
 import { useAuthStore, getDisplayName, getFirstName } from '@/stores/auth-store';
 import { WorkspaceSelector } from '@/components/workspace';
 import { cn, getInitials } from '@/lib/utils';
+import { getTenantSlugFromHost } from '@/lib/tenant';
 
 interface HeaderProps {
   onMobileMenuToggle?: () => void;
@@ -39,6 +40,14 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuthStore();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [tenantSlug, setTenantSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTenantSlug(getTenantSlugFromHost());
+  }, []);
+
+  /** Tenant subdomain users are scoped to one workspace; admins keep the switcher for cross-tenant work. */
+  const hideWorkspaceSwitcher = Boolean(tenantSlug && !user?.isAdmin);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -60,11 +69,13 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
         <Menu className="h-5 w-5" />
       </Button>
 
-      {/* Workspace Selector */}
-      <WorkspaceSelector
-        className="hidden sm:flex"
-        onManage={() => router.push('/workspaces')}
-      />
+      {/* Workspace Selector — hidden on tenant subdomains for non-admins */}
+      {!hideWorkspaceSwitcher && (
+        <WorkspaceSelector
+          className="hidden sm:flex"
+          onManage={() => router.push('/workspaces')}
+        />
+      )}
 
       {/* Search */}
       <div className="relative flex-1 max-w-md hidden md:block">

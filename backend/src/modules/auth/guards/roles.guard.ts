@@ -1,6 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { PermissionLevel } from '@messagesender/shared';
+import { resolveTenantWorkspaceId } from '../../../common/tenant/resolve-tenant-workspace-id';
 
 /**
  * User roles from the Prisma schema
@@ -22,11 +25,26 @@ const ROLE_HIERARCHY: Record<Role, number> = {
   USER: 10,
 };
 
+const PERMISSION_HIERARCHY: Record<PermissionLevel, number> = {
+  [PermissionLevel.VIEW_ONLY]: 1,
+  [PermissionLevel.OPERATOR]: 2,
+  [PermissionLevel.MANAGER]: 3,
+};
+
+const WORKSPACE_ROLE_TO_PERMISSION: Partial<Record<Role, PermissionLevel>> = {
+  VIEW_ONLY: PermissionLevel.VIEW_ONLY,
+  OPERATOR: PermissionLevel.OPERATOR,
+  MANAGER: PermissionLevel.MANAGER,
+};
+
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private prisma: PrismaService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -45,17 +63,79 @@ export class RolesGuard implements CanActivate {
     // Admin users (isAdmin=true from JWT) have SUPER_ADMIN level access
     // This is the primary admin of the single-owner system
     if (user.isAdmin === true) {
+      const request = context.switchToHttp().getRequest();
+      const workspaceId = resolveTenantWorkspaceId(request, { isAdmin: true });
+      if (workspaceId) {
+        if (request.tenantId) {
+          const inTenant = await this.prisma.workspace.findFirst({
+            where: { id: workspaceId, tenantId: request.tenantId },
+            select: { id: true },
+          });
+          if (!inTenant) {
+            throw new ForbiddenException('Workspace does not belong to tenant');
+          }
+        }
+        request.tenantWorkspaceId = workspaceId;
+      }
       return true;
     }
 
     // If the endpoint requires workspace-level roles, we MUST defer to the WorkspaceGuard
-    // because RolesGuard doesn't have the workspace context natively.
     // Workspace-level roles are: MANAGER, OPERATOR, VIEW_ONLY
     const workspaceRoles: Role[] = ['MANAGER', 'OPERATOR', 'VIEW_ONLY'];
     const hasWorkspaceRoleRequirement = requiredRoles.some((r) => workspaceRoles.includes(r));
 
     if (hasWorkspaceRoleRequirement) {
-      // Defer to WorkspaceGuard to handle this logic correctly within context
+      const request = context.switchToHttp().getRequest();
+
+      const workspaceId = resolveTenantWorkspaceId(request, {
+        isAdmin: false,
+        requirePresent: true,
+      });
+
+      const wid = workspaceId!;
+      request.tenantWorkspaceId = wid;
+
+      if (request.tenantId) {
+        const inTenant = await this.prisma.workspace.findFirst({
+          where: { id: wid, tenantId: request.tenantId },
+          select: { id: true },
+        });
+        if (!inTenant) {
+          throw new ForbiddenException('Workspace does not belong to tenant');
+        }
+      }
+
+      const access = await this.prisma.workspaceUserAccess.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId: wid,
+            userId: user.userId,
+          },
+        },
+      });
+
+      if (!access) {
+        throw new ForbiddenException('No access to this workspace');
+      }
+
+      request.workspaceAccess = access;
+
+      // Enforce strongest required workspace role
+      const requiredPermissionLevels = requiredRoles
+        .map((r) => WORKSPACE_ROLE_TO_PERMISSION[r])
+        .filter(Boolean) as PermissionLevel[];
+
+      const requiredLevel = Math.max(
+        ...requiredPermissionLevels.map((p) => PERMISSION_HIERARCHY[p]),
+        0,
+      );
+      const userLevel = PERMISSION_HIERARCHY[access.permissionLevel as PermissionLevel] || 0;
+
+      if (userLevel < requiredLevel) {
+        throw new ForbiddenException('Insufficient permissions');
+      }
+
       return true;
     }
 

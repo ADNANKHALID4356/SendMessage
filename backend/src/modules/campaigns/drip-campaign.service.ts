@@ -199,8 +199,14 @@ export class DripCampaignService {
     contactId: string,
     completedStep: number,
   ): Promise<void> {
-    const campaign = await this.prisma.campaign.findUnique({
-      where: { id: campaignId },
+    const metaJson = await this.redis.get(`${this.DRIP_PREFIX}${campaignId}:meta`);
+    if (!metaJson) return;
+    const meta = JSON.parse(metaJson) as { workspaceId?: string; pageId?: string };
+    const workspaceId = meta.workspaceId;
+    if (!workspaceId) return;
+
+    const campaign = await this.prisma.campaign.findFirst({
+      where: { id: campaignId, workspaceId },
     });
 
     if (!campaign || campaign.status !== CampaignStatus.RUNNING) return;
@@ -251,9 +257,7 @@ export class DripCampaignService {
     }
 
     // Schedule next step
-    const metaJson = await this.redis.get(`${this.DRIP_PREFIX}${campaignId}:meta`);
-    if (!metaJson) return;
-    const meta = JSON.parse(metaJson);
+    if (!meta.pageId) return;
 
     progress.currentStep = nextStep;
     progress.lastStepAt = new Date().toISOString();
@@ -263,7 +267,7 @@ export class DripCampaignService {
       campaignId,
       contactId,
       meta.pageId,
-      meta.workspaceId,
+      workspaceId,
       nextStep,
       dripSequence,
     );

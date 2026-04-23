@@ -74,14 +74,14 @@ export class PageSyncService implements OnApplicationShutdown {
   /**
    * Sync all active pages across all workspaces
    */
-  async syncAllPages(): Promise<{
+  async syncAllPages(workspaceId?: string): Promise<{
     synced: number;
     failed: number;
     tokenRefreshed: number;
     errors: Array<{ pageId: string; error: string }>;
   }> {
     const pages = await this.prisma.page.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ...(workspaceId ? { workspaceId } : {}) },
       include: {
         facebookAccount: {
           select: { accessToken: true, tokenExpiresAt: true },

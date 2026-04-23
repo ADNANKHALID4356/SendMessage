@@ -38,7 +38,7 @@ describe('BackupService', () => {
     campaign: { count: jest.fn(), findMany: jest.fn() },
     page: { count: jest.fn(), findMany: jest.fn() },
     segment: { count: jest.fn(), findMany: jest.fn() },
-    workspace: { findUnique: jest.fn() },
+    workspace: { findUnique: jest.fn(), findFirst: jest.fn() },
     systemSetting: {
       findUnique: jest.fn(),
       upsert: jest.fn(),
@@ -74,6 +74,7 @@ describe('BackupService', () => {
     mockPrisma.segment.findMany.mockResolvedValue([]);
     mockPrisma.page.findMany.mockResolvedValue([]);
     mockPrisma.workspace.findUnique.mockResolvedValue({ id: 'ws1', name: 'Test' });
+    mockPrisma.workspace.findFirst.mockResolvedValue({ id: 'ws1' });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [BackupService, { provide: PrismaService, useValue: mockPrisma }],
@@ -104,6 +105,7 @@ describe('BackupService', () => {
     });
 
     it('should set status to failed on error', async () => {
+      mockPrisma.workspace.findFirst.mockResolvedValue({ id: 'ws1' });
       mockPrisma.contact.count.mockRejectedValue(new Error('DB error'));
 
       await expect(service.createBackup('ws1')).rejects.toThrow('DB error');

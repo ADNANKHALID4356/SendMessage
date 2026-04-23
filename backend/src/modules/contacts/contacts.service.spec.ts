@@ -385,4 +385,17 @@ describe('ContactsService', () => {
       expect(result.engagementByLevel.hot).toBe(20);
     });
   });
+
+  describe('tenant isolation', () => {
+    it('findById should scope by workspaceId (cross-tenant returns not found)', async () => {
+      mockPrismaService.contact.findFirst.mockResolvedValue(null);
+
+      await expect(service.findById('ws-a', 'contact-other')).rejects.toThrow(NotFoundException);
+      expect(mockPrismaService.contact.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'contact-other', workspaceId: 'ws-a' },
+        }),
+      );
+    });
+  });
 });

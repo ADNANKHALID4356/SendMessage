@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TenantPlanService, TenantPlanCode } from '../../common/tenant/tenant-plan.service';
 
 // ===========================================
 // Types
@@ -41,7 +42,10 @@ export interface AdminDashboardStats {
 export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tenantPlanService: TenantPlanService,
+  ) {}
 
   // ===========================================
   // System Settings
@@ -230,6 +234,29 @@ export class AdminService {
     };
   }
 
+  /**
+   * Per-tenant counts for control-plane / health views
+   */
+  async getTenantHealthSummary() {
+    return this.prisma.workspace.findMany({
+      orderBy: { sortOrder: 'asc' },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        isActive: true,
+        _count: {
+          select: {
+            contacts: true,
+            campaigns: true,
+            pages: true,
+            conversations: true,
+          },
+        },
+      },
+    });
+  }
+
   // ===========================================
   // Data Export
   // ===========================================
@@ -290,5 +317,75 @@ export class AdminService {
     });
 
     return campaigns;
+  }
+
+  // ===========================================
+  // Businesses (Tenants) — Super Admin control plane
+  // ===========================================
+
+  async listBusinesses() {
+    return this.prisma.tenant.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, slug: true, name: true, status: true, planCode: true, createdAt: true },
+    });
+  }
+
+  async createBusiness(params: { slug: string; name: string; planCode?: TenantPlanCode }) {
+    const slug = (params.slug || '').trim().toLowerCase();
+    if (!slug) {
+      throw new BadRequestException('slug is required');
+    }
+    if (slug.length > 63) {
+      throw new BadRequestException('slug is too long');
+    }
+
+    return this.prisma.tenant.create({
+      data: {
+        slug,
+        name: params.name,
+        planCode: (params.planCode as any) || 'BASIC',
+      },
+      select: { id: true, slug: true, name: true, status: true, planCode: true, createdAt: true },
+    });
+  }
+
+  async updateBusiness(tenantId: string, params: { status?: 'ACTIVE' | 'SUSPENDED' | 'DELETED'; planCode?: TenantPlanCode }) {
+    const existing = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { id: true } });
+    if (!existing) throw new NotFoundException('Tenant not found');
+
+    return this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        ...(params.status ? { status: params.status as any } : {}),
+        ...(params.planCode ? { planCode: params.planCode as any } : {}),
+      },
+      select: { id: true, slug: true, name: true, status: true, planCode: true, createdAt: true },
+    });
+  }
+
+  async getBusinessUsage(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { id: true, slug: true, name: true, status: true, planCode: true },
+    });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const { limits } = await this.tenantPlanService.getTenantPlan(tenantId);
+    const [memberUsersUsed, workspacesUsed] = await Promise.all([
+      this.prisma.user.count({
+        where: {
+          tenantId,
+          systemRole: 'TENANT_USER',
+          status: { in: ['PENDING', 'ACTIVE'] },
+        },
+      }),
+      this.prisma.workspace.count({ where: { tenantId } }),
+    ]);
+
+    return {
+      tenant,
+      limits,
+      usage: { memberUsers: memberUsersUsed, workspaces: workspacesUsed },
+    };
   }
 }

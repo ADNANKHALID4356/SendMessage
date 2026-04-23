@@ -48,7 +48,11 @@ export const setWorkspaceIdResolver = (resolver: () => string | null) => {
   _getWorkspaceId = resolver;
 };
 
-// Token storage keys
+/** Current workspace id used for `X-Workspace-Id` (null if unset). */
+export const getResolvedWorkspaceId = (): string | null => _getWorkspaceId?.() ?? null;
+
+// Token storage: localStorage is convenient for SPA dev; for production SaaS prefer
+// httpOnly cookies + CSRF (see MULTITENANCY.md).
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 

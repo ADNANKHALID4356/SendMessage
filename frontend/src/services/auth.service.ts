@@ -15,6 +15,7 @@ export interface LoginResponse {
   user: AuthUser;
   accessToken: string;
   refreshToken: string;
+  expiresIn?: number;
 }
 
 export interface AdminSignupRequest {
@@ -49,6 +50,7 @@ export interface AuthUser {
   isAdmin: boolean;
   workspaces?: WorkspaceMembership[];
   currentWorkspaceId?: string;
+  impersonatorAdminId?: string;
 }
 
 export interface WorkspaceMembership {
@@ -208,6 +210,15 @@ export const authService = {
    */
   async getProfile(signal?: AbortSignal): Promise<AuthUser> {
     return api.get<AuthUser>('/auth/me', { signal });
+  },
+
+  /**
+   * End super-admin impersonation: invalidates the user session and returns admin JWTs.
+   */
+  async endImpersonation(): Promise<LoginResponse> {
+    const response = await api.post<LoginResponse>('/auth/impersonation/end', {});
+    tokenManager.setTokens(response.accessToken, response.refreshToken);
+    return response;
   },
 
   /**

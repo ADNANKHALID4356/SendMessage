@@ -61,18 +61,39 @@ function LoginForm() {
       router.push('/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
-      
-      // Check if it's a 404 or admin doesn't exist
-      if (isAdminLogin && (error.status === 401 || error.message?.includes('Invalid credentials'))) {
+
+      const status = error?.status;
+      const message = error?.message || '';
+
+      if (
+        !isAdminLogin &&
+        status === 401 &&
+        data.username &&
+        !data.username.includes('@')
+      ) {
         toast({
           title: 'Login failed',
-          description: error.message || 'Invalid credentials. If you haven\'t created an admin account yet, please sign up first.',
+          description:
+            'User sign-in expects your email address. System admins must use Admin login below (or open /login?admin=true) with admin username or admin email.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (isAdminLogin && (status === 401 || message.includes('Invalid credentials'))) {
+        toast({
+          title: 'Login failed',
+          description:
+            message ||
+            'Invalid credentials. Create the first admin via Admin signup, or run pnpm db:seed for the default admin user.',
           variant: 'destructive',
         });
       } else {
         toast({
           title: 'Login failed',
-          description: error.message || 'Invalid credentials. Please try again.',
+          description:
+            message ||
+            'Invalid credentials. Check that the API is running and NEXT_PUBLIC_API_URL matches your backend.',
           variant: 'destructive',
         });
       }
@@ -99,7 +120,7 @@ function LoginForm() {
             </CardTitle>
             <CardDescription className="text-center">
               {isAdminLogin
-                ? 'Sign in to your admin account'
+                ? 'Sign in with your admin username or admin email. After a fresh database seed, username is admin and password is Admin@123.'
                 : 'Sign in to your account to continue'}
             </CardDescription>
           </CardHeader>

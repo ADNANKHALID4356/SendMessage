@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useWorkspaces } from '@/hooks/use-workspace';
 import { useWorkspaceStore, WorkspaceInfo } from '@/stores/workspace-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { setWorkspaceIdResolver } from '@/lib/api-client';
+import { getTenantSlugFromHost } from '@/lib/tenant';
 
 // Register workspace resolver once at module load so every API request
 // automatically includes the X-Workspace-Id header.
@@ -15,9 +16,13 @@ interface WorkspaceProviderProps {
 }
 
 export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, setWorkspace: setAuthWorkspaceId } = useAuthStore();
   const { setWorkspaces, setCurrentWorkspace, currentWorkspace, setLoading } = useWorkspaceStore();
-  
+  const [tenantSlug, setTenantSlug] = useState<string | null>(null);
+  useEffect(() => {
+    setTenantSlug(getTenantSlugFromHost());
+  }, []);
+
   const { data, isLoading, isSuccess } = useWorkspaces(
     { limit: 10 },
     { enabled: isAuthenticated }
@@ -29,29 +34,34 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
 
   useEffect(() => {
     if (isSuccess && data?.data) {
-      const workspaces: WorkspaceInfo[] = data.data.map(w => ({
+      const workspaces: WorkspaceInfo[] = data.data.map((w) => ({
         id: w.id,
         name: w.name,
+        slug: w.slug,
         description: w.description,
         isActive: w.status === 'active',
       }));
-      
+
       setWorkspaces(workspaces);
-      
-      // Auto-select first workspace if none selected
+
+      // Auto-select first workspace if none selected.
+      // On tenant hosts, the subdomain resolves the business; the specific workspace still comes from the user's list.
       if (!currentWorkspace && workspaces.length > 0) {
-        setCurrentWorkspace(workspaces[0]);
+        const first = workspaces[0];
+        setCurrentWorkspace(first);
+        setAuthWorkspaceId(first.id);
       }
     }
-  }, [isSuccess, data, currentWorkspace, setWorkspaces, setCurrentWorkspace]);
+  }, [isSuccess, data, currentWorkspace, setWorkspaces, setCurrentWorkspace, tenantSlug, setAuthWorkspaceId]);
 
   // Reset workspace when user logs out
   useEffect(() => {
     if (!isAuthenticated) {
       setWorkspaces([]);
       setCurrentWorkspace(null);
+      setAuthWorkspaceId(null);
     }
-  }, [isAuthenticated, setWorkspaces, setCurrentWorkspace]);
+  }, [isAuthenticated, setWorkspaces, setCurrentWorkspace, setAuthWorkspaceId]);
 
   return <>{children}</>;
 }

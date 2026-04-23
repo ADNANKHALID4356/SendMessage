@@ -97,6 +97,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/messagesender_test
       
+      - name: Seed database (E2E fixtures)
+        run: pnpm --filter backend prisma:seed
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/messagesender_test
+      
       - name: Run unit tests
         run: pnpm --filter backend test
         env:

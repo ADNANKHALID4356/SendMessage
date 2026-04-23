@@ -72,8 +72,11 @@ export class FacebookController {
     try {
       const result = await this.facebookService.handleCallback(code, state);
 
+      // Prefer the redirectUrl captured at OAuth initiation (keeps correct localhost port / tenant origin)
+      const base = (result.redirectUrl || frontendUrl).replace(/\/+$/, '');
+
       // Redirect to frontend settings page with success
-      const successUrl = `${frontendUrl}/settings?tab=integrations&success=true&facebookAccountId=${result.facebookAccountId}`;
+      const successUrl = `${base}/settings?tab=integrations&success=true&facebookAccountId=${result.facebookAccountId}`;
       return res.redirect(successUrl);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';

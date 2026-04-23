@@ -14,45 +14,45 @@ export class AnalyticsController {
 
   @Get('overview')
   @ApiOperation({ summary: 'Get workspace analytics overview' })
-  async getOverview(@CurrentWorkspace() workspace: any) {
-    return this.analyticsService.getOverview(workspace.id);
+  async getOverview(@CurrentWorkspace() workspaceId: string) {
+    return this.analyticsService.getOverview(workspaceId);
   }
 
   @Get('messages')
   @ApiOperation({ summary: 'Get message analytics' })
   @ApiQuery({ name: 'days', required: false, type: Number })
   async getMessageStats(
-    @CurrentWorkspace() workspace: any,
+    @CurrentWorkspace() workspaceId: string,
     @Query('days', new DefaultValuePipe(30), ParseIntPipe) days: number,
   ) {
-    return this.analyticsService.getMessageStats(workspace.id, days);
+    return this.analyticsService.getMessageStats(workspaceId, days);
   }
 
   @Get('campaigns')
   @ApiOperation({ summary: 'Get campaign analytics' })
-  async getCampaignStats(@CurrentWorkspace() workspace: any) {
-    return this.analyticsService.getCampaignStats(workspace.id);
+  async getCampaignStats(@CurrentWorkspace() workspaceId: string) {
+    return this.analyticsService.getCampaignStats(workspaceId);
   }
 
   @Get('contacts')
   @ApiOperation({ summary: 'Get contact growth analytics' })
   @ApiQuery({ name: 'days', required: false, type: Number })
   async getContactGrowth(
-    @CurrentWorkspace() workspace: any,
+    @CurrentWorkspace() workspaceId: string,
     @Query('days', new DefaultValuePipe(30), ParseIntPipe) days: number,
   ) {
-    return this.analyticsService.getContactGrowth(workspace.id, days);
+    return this.analyticsService.getContactGrowth(workspaceId, days);
   }
 
   @Get('pages')
   @ApiOperation({ summary: 'Get page performance analytics' })
-  async getPagePerformance(@CurrentWorkspace() workspace: any) {
-    return this.analyticsService.getPagePerformance(workspace.id);
+  async getPagePerformance(@CurrentWorkspace() workspaceId: string) {
+    return this.analyticsService.getPagePerformance(workspaceId);
   }
 
   @Get('engagement')
   @ApiOperation({ summary: 'Get engagement metrics' })
-  async getEngagementMetrics(@CurrentWorkspace() workspace: any) {
-    return this.analyticsService.getEngagementMetrics(workspace.id);
+  async getEngagementMetrics(@CurrentWorkspace() workspaceId: string) {
+    return this.analyticsService.getEngagementMetrics(workspaceId);
   }
 }

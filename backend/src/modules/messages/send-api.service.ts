@@ -108,9 +108,9 @@ export class SendApiService {
   /**
    * Check if contact is within 24-hour messaging window
    */
-  async isWithin24HourWindow(contactId: string, pageId: string): Promise<boolean> {
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+  async isWithin24HourWindow(contactId: string, pageId: string, workspaceId: string): Promise<boolean> {
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, pageId, workspaceId },
       select: { lastMessageFromContactAt: true },
     });
 
@@ -125,17 +125,17 @@ export class SendApiService {
   /**
    * Get comprehensive window status for a contact
    */
-  async getWindowStatus(contactId: string, pageId: string): Promise<WindowStatus> {
+  async getWindowStatus(contactId: string, pageId: string, workspaceId: string): Promise<WindowStatus> {
     // Check cache first
-    const cacheKey = `window:${contactId}:${pageId}`;
+    const cacheKey = `window:${workspaceId}:${contactId}:${pageId}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) {
       return JSON.parse(cached);
     }
 
     // Get contact data
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, pageId, workspaceId },
       include: {
         otnTokens: {
           where: {
@@ -218,8 +218,8 @@ export class SendApiService {
     try {
       // Get contact and page data
       const [contact, page] = await Promise.all([
-        this.prisma.contact.findUnique({
-          where: { id: contactId },
+        this.prisma.contact.findFirst({
+          where: { id: contactId, workspaceId, pageId },
           select: {
             id: true,
             psid: true,
@@ -230,8 +230,8 @@ export class SendApiService {
             lastMessageFromContactAt: true,
           },
         }),
-        this.prisma.page.findUnique({
-          where: { id: pageId },
+        this.prisma.page.findFirst({
+          where: { id: pageId, workspaceId },
           select: {
             id: true,
             accessToken: true,
@@ -403,6 +403,7 @@ export class SendApiService {
           options.messageTag,
           options.contactId,
           options.pageId,
+          options.workspaceId,
         );
         if (complianceError) {
           this.logger.warn(`Message tag compliance failed: ${complianceError}`);
@@ -412,7 +413,11 @@ export class SendApiService {
       return options.bypassMethod;
     }
 
-    const windowStatus = await this.getWindowStatus(options.contactId, options.pageId);
+    const windowStatus = await this.getWindowStatus(
+      options.contactId,
+      options.pageId,
+      options.workspaceId,
+    );
 
     // Priority 1: Within 24-hour window
     if (windowStatus.isWithin24Hours) {
@@ -435,6 +440,7 @@ export class SendApiService {
         options.messageTag,
         options.contactId,
         options.pageId,
+        options.workspaceId,
       );
       if (complianceError) {
         this.logger.warn(`Message tag compliance failed: ${complianceError}`);
@@ -457,11 +463,12 @@ export class SendApiService {
     tag: MessageTag,
     contactId: string,
     pageId: string,
+    workspaceId: string,
   ): Promise<string | null> {
     // HUMAN_AGENT tag has a strict 7-day window requirement
     if (tag === MessageTag.HUMAN_AGENT) {
-      const contact = await this.prisma.contact.findUnique({
-        where: { id: contactId },
+      const contact = await this.prisma.contact.findFirst({
+        where: { id: contactId, pageId, workspaceId },
         select: { lastMessageFromContactAt: true },
       });
 

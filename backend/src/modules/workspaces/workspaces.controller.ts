@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDto, UpdateWorkspaceDto, AssignUserDto } from './dto';
 
@@ -53,6 +54,16 @@ export class WorkspacesController {
       return this.workspacesService.findAllPaginated();
     }
     return this.workspacesService.findByUserPaginated(user.userId);
+  }
+
+  @Public()
+  @Get('public/by-slug/:slug')
+  @ApiOperation({ summary: 'Resolve a workspace by tenant slug (public, minimal fields)' })
+  @ApiParam({ name: 'slug', description: 'Workspace slug / subdomain label' })
+  @ApiResponse({ status: 200, description: 'Workspace bootstrap payload' })
+  @ApiResponse({ status: 404, description: 'Workspace not found' })
+  async findPublicBySlug(@Param('slug') slug: string) {
+    return this.workspacesService.findPublicBySlug(slug);
   }
 
   @Get(':id')

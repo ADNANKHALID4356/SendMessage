@@ -1,4 +1,5 @@
 import api from '@/lib/api-client';
+import { shouldUseTenantScopedApi } from '@/lib/tenant-api-paths';
 
 // ===========================================
 // Types
@@ -67,66 +68,66 @@ export interface WebhookStatus {
 // ===========================================
 
 export const pageService = {
-  /**
-   * Get all pages for a workspace
-   */
   async getPages(workspaceId: string): Promise<Page[]> {
+    if (shouldUseTenantScopedApi()) {
+      return api.get<Page[]>('/tenant/pages');
+    }
     return api.get<Page[]>(`/workspaces/${workspaceId}/pages`);
   },
 
-  /**
-   * Get page by ID
-   */
   async getPage(workspaceId: string, pageId: string): Promise<Page> {
+    if (shouldUseTenantScopedApi()) {
+      return api.get<Page>(`/tenant/pages/${pageId}`);
+    }
     return api.get<Page>(`/workspaces/${workspaceId}/pages/${pageId}`);
   },
 
-  /**
-   * Get page statistics
-   */
   async getStats(workspaceId: string, pageId: string): Promise<PageStats> {
+    if (shouldUseTenantScopedApi()) {
+      return api.get<PageStats>(`/tenant/pages/${pageId}/stats`);
+    }
     return api.get<PageStats>(`/workspaces/${workspaceId}/pages/${pageId}/stats`);
   },
 
-  /**
-   * Update page settings
-   */
   async updatePage(workspaceId: string, pageId: string, data: UpdatePageRequest): Promise<Page> {
+    if (shouldUseTenantScopedApi()) {
+      return api.put<Page>(`/tenant/pages/${pageId}`, data);
+    }
     return api.put<Page>(`/workspaces/${workspaceId}/pages/${pageId}`, data);
   },
 
-  /**
-   * Deactivate a page
-   */
   async deactivatePage(workspaceId: string, pageId: string): Promise<void> {
+    if (shouldUseTenantScopedApi()) {
+      return api.delete(`/tenant/pages/${pageId}`);
+    }
     return api.delete(`/workspaces/${workspaceId}/pages/${pageId}`);
   },
 
-  /**
-   * Reactivate a page
-   */
   async reactivatePage(workspaceId: string, pageId: string): Promise<Page> {
+    if (shouldUseTenantScopedApi()) {
+      return api.post<Page>(`/tenant/pages/${pageId}/reactivate`);
+    }
     return api.post<Page>(`/workspaces/${workspaceId}/pages/${pageId}/reactivate`);
   },
 
-  /**
-   * Sync page info from Facebook
-   */
   async syncPage(workspaceId: string, pageId: string): Promise<Page> {
+    if (shouldUseTenantScopedApi()) {
+      return api.post<Page>(`/tenant/pages/${pageId}/sync`);
+    }
     return api.post<Page>(`/workspaces/${workspaceId}/pages/${pageId}/sync`);
   },
 
-  /**
-   * Validate page access token
-   */
   async validateToken(workspaceId: string, pageId: string): Promise<TokenValidation> {
+    if (shouldUseTenantScopedApi()) {
+      return api.get<TokenValidation>(`/tenant/pages/${pageId}/token/validate`);
+    }
     return api.get<TokenValidation>(`/workspaces/${workspaceId}/pages/${pageId}/token/validate`);
   },
 
-  /**
-   * Fix webhook subscription
-   */
   async fixWebhook(workspaceId: string, pageId: string): Promise<WebhookStatus> {
+    if (shouldUseTenantScopedApi()) {
+      return api.post<WebhookStatus>(`/tenant/pages/${pageId}/webhook/fix`);
+    }
     return api.post<WebhookStatus>(`/workspaces/${workspaceId}/pages/${pageId}/webhook/fix`);
   },
 };

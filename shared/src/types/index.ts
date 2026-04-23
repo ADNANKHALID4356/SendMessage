@@ -67,6 +67,8 @@ export interface AuthUser {
   lastName?: string;
   isAdmin: boolean;
   workspaces?: WorkspaceAccess[];
+  /** Present when a super-admin is acting as this user */
+  impersonatorAdminId?: string;
 }
 
 export interface WorkspaceAccess {

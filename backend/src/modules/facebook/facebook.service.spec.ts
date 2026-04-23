@@ -226,6 +226,15 @@ describe('FacebookService', () => {
         workspaceId: 'workspace-1',
       });
       mockPrismaService.page.findFirst.mockResolvedValue(null);
+      mockFbApiService.getUserPages.mockResolvedValue([
+        {
+          id: 'fb-page-123',
+          name: 'Test Page',
+          category: 'Business',
+          access_token: 'page-token',
+          picture: { data: { url: 'http://example.com/pic.jpg' } },
+        },
+      ]);
       mockFbApiService.getPageAccessToken.mockResolvedValue('page-token');
       mockFbApiService.subscribePageToWebhook.mockResolvedValue(true);
       mockFbApiService.getPageInfo.mockResolvedValue({

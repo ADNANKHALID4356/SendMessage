@@ -106,6 +106,7 @@ describe('WorkspacesService', () => {
       expect(mockPrismaService.workspace.create).toHaveBeenCalledWith({
         data: {
           name: 'Test Workspace',
+          slug: 'test-workspace',
           description: 'Test Description',
           logoUrl: undefined,
           colorTheme: '#3B82F6',

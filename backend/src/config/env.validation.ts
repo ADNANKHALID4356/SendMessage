@@ -112,6 +112,14 @@ export const envValidationSchema = Joi.object({
   FRONTEND_URL: Joi.string().default('http://localhost:3000'),
 
   // ──────────────────────────────────────────
+  // Multi-tenant (subdomain routing)
+  // ──────────────────────────────────────────
+  BASE_DOMAIN: Joi.string().default('localhost'),
+  ADMIN_HOSTS: Joi.string().allow('').optional(),
+  /** Per-tenant daily outbound message cap (0 = disabled) */
+  DEFAULT_TENANT_DAILY_SEND_CAP: Joi.number().integer().min(0).default(0),
+
+  // ──────────────────────────────────────────
   // Sentry (optional — no-op when missing)
   // ──────────────────────────────────────────
   SENTRY_DSN: Joi.string().uri().allow('').optional(),

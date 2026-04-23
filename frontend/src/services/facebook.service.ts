@@ -1,4 +1,5 @@
 import api from '@/lib/api-client';
+import { shouldUseTenantScopedApi } from '@/lib/tenant-api-paths';
 
 // ===========================================
 // Types
@@ -59,6 +60,11 @@ export const facebookService = {
    * Initiate OAuth flow - get authorization URL
    */
   async initiateOAuth(workspaceId: string, redirectUrl?: string): Promise<InitiateOAuthResponse> {
+    if (shouldUseTenantScopedApi()) {
+      return api.post<InitiateOAuthResponse>('/tenant/facebook/oauth/initiate', {
+        redirectUrl,
+      });
+    }
     return api.post<InitiateOAuthResponse>('/facebook/oauth/initiate', {
       workspaceId,
       redirectUrl,
@@ -69,6 +75,9 @@ export const facebookService = {
    * Get Facebook connection status for a workspace
    */
   async getConnectionStatus(workspaceId: string): Promise<ConnectionStatus> {
+    if (shouldUseTenantScopedApi()) {
+      return api.get<ConnectionStatus>('/tenant/facebook/status');
+    }
     return api.get<ConnectionStatus>(`/facebook/workspaces/${workspaceId}/status`);
   },
 
@@ -83,6 +92,9 @@ export const facebookService = {
    * Connect a Facebook page to the workspace
    */
   async connectPage(workspaceId: string, data: ConnectPageRequest): Promise<FacebookPage> {
+    if (shouldUseTenantScopedApi()) {
+      return api.post<FacebookPage>('/tenant/facebook/pages', data);
+    }
     return api.post<FacebookPage>(`/facebook/workspaces/${workspaceId}/pages`, data);
   },
 
@@ -90,6 +102,9 @@ export const facebookService = {
    * Disconnect a Facebook page
    */
   async disconnectPage(workspaceId: string, pageId: string): Promise<void> {
+    if (shouldUseTenantScopedApi()) {
+      return api.delete(`/tenant/facebook/pages/${pageId}`);
+    }
     return api.delete(`/facebook/workspaces/${workspaceId}/pages/${pageId}`);
   },
 
@@ -97,6 +112,9 @@ export const facebookService = {
    * Disconnect Facebook account from workspace
    */
   async disconnectAccount(workspaceId: string): Promise<void> {
+    if (shouldUseTenantScopedApi()) {
+      return api.delete('/tenant/facebook/disconnect');
+    }
     return api.delete(`/facebook/workspaces/${workspaceId}/disconnect`);
   },
 
@@ -116,6 +134,9 @@ export const facebookService = {
     account: FacebookAccount;
     pages: FacebookPage[];
   }> {
+    if (shouldUseTenantScopedApi()) {
+      return api.post('/tenant/facebook/mock/connect', {});
+    }
     return api.post(`/facebook/mock/connect`, { workspaceId });
   },
 };

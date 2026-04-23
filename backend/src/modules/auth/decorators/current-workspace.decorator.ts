@@ -8,23 +8,15 @@ export const CurrentWorkspace = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): string => {
     const request = ctx.switchToHttp().getRequest();
 
-    // First check header
-    let workspaceId = request.headers['x-workspace-id'];
-
-    // Then check query parameter
-    if (!workspaceId) {
-      workspaceId = request.query?.workspaceId;
+    // Prefer resolved tenant workspace id (set by guards/middleware)
+    if (request.tenantWorkspaceId) {
+      return request.tenantWorkspaceId;
     }
 
-    // Then check user's active workspace
-    if (!workspaceId && request.user?.activeWorkspaceId) {
-      workspaceId = request.user.activeWorkspaceId;
-    }
-
-    // Then check user's workspaces array (use first one)
-    if (!workspaceId && request.user?.workspaces?.length > 0) {
-      workspaceId = request.user.workspaces[0].id;
-    }
+    let workspaceId =
+      request.params?.workspaceId ||
+      request.headers['x-workspace-id'] ||
+      request.query?.workspaceId;
 
     return workspaceId || '';
   },

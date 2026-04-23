@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   ConflictException,
   NotFoundException,
@@ -20,16 +21,19 @@ import { UserSignupDto } from './dto/user-signup.dto';
 import { AuthTokens, AuthUser, PermissionLevel, WorkspaceAccess } from '@messagesender/shared';
 import { TIME, CACHE_KEYS, ERROR_CODES } from '@messagesender/shared';
 import { LoginRateLimitGuard } from './guards/rate-limit.guard';
+import { TenantPlanService } from '../../common/tenant/tenant-plan.service';
 
 interface JwtPayload {
   sub: string;
   email: string;
   isAdmin: boolean;
   sessionId: string;
+  impersonatorAdminId?: string;
 }
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly BCRYPT_ROUNDS = 12;
   private readonly ACCESS_TOKEN_EXPIRY: string;
   private readonly REFRESH_TOKEN_EXPIRY: number;
@@ -41,6 +45,7 @@ export class AuthService {
     private configService: ConfigService,
     private redisService: RedisService,
     private loginRateLimitGuard: LoginRateLimitGuard,
+    private tenantPlanService: TenantPlanService,
   ) {
     this.ACCESS_TOKEN_EXPIRY = this.configService.get('JWT_EXPIRES_IN', '1h');
     this.REFRESH_TOKEN_EXPIRY = TIME.REFRESH_TOKEN_EXPIRY_SECONDS;
@@ -51,10 +56,18 @@ export class AuthService {
   // ADMIN AUTHENTICATION
   // =====================
 
-  async validateAdmin(username: string, password: string): Promise<AuthUser | null> {
-    const admin = await this.prisma.admin.findUnique({
-      where: { username },
-    });
+  async validateAdmin(usernameOrEmail: string, password: string): Promise<AuthUser | null> {
+    const raw = (usernameOrEmail || '').trim();
+    if (!raw) {
+      return null;
+    }
+
+    let admin = await this.prisma.admin.findUnique({ where: { username: raw } });
+    if (!admin && raw.includes('@')) {
+      admin = await this.prisma.admin.findUnique({
+        where: { email: raw.toLowerCase() },
+      });
+    }
 
     if (!admin) {
       return null;
@@ -266,6 +279,7 @@ export class AuthService {
     await this.prisma.workspace.create({
       data: {
         name: 'Default Workspace',
+        slug: `default-${admin.id.slice(0, 8)}`,
         description: 'Your first workspace',
         colorTheme: '#3B82F6',
         isActive: true,
@@ -299,7 +313,10 @@ export class AuthService {
   // USER SIGNUP (WITH ADMIN APPROVAL)
   // =====================
 
-  async userSignup(signupDto: UserSignupDto): Promise<{ message: string; userId: string }> {
+  async userSignup(
+    signupDto: UserSignupDto,
+    tenantId?: string | null,
+  ): Promise<{ message: string; userId: string }> {
     // Validate passwords match
     if (signupDto.password !== signupDto.confirmPassword) {
       throw new BadRequestException('Passwords do not match');
@@ -316,9 +333,14 @@ export class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(signupDto.password, this.BCRYPT_ROUNDS);
 
-    // Create user with PENDING status (requires admin approval)
+    if (tenantId) {
+      await this.tenantPlanService.assertCanCreateMemberUser(tenantId);
+    }
+
+    // Create user with PENDING status (requires approval in this app’s flow)
     const user = await this.prisma.user.create({
       data: {
+        ...(tenantId ? { tenantId } : {}),
         email: signupDto.email,
         passwordHash,
         firstName: signupDto.firstName,
@@ -577,9 +599,110 @@ export class AuthService {
     return { message: 'Workspace access revoked successfully' };
   }
 
+  /**
+   * Super-admin: issue a user session (JWT as target user) for support / debugging.
+   */
+  async startImpersonation(
+    adminId: string,
+    targetUserId: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<AuthTokens & { user: AuthUser }> {
+    const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.status !== 'ACTIVE') {
+      throw new ForbiddenException('Can only impersonate active users');
+    }
+
+    const tokens = await this.createSession(
+      targetUserId,
+      false,
+      false,
+      ipAddress,
+      userAgent,
+      { impersonatorAdminId: adminId },
+    );
+
+    const authUser = await this.getAuthUser(targetUserId, false);
+    if (!authUser) {
+      throw new UnauthorizedException('Unable to load user profile');
+    }
+
+    return { ...tokens, user: authUser };
+  }
+
+  /**
+   * End impersonation: revoke the impersonated user session and re-issue admin tokens.
+   */
+  async endImpersonation(
+    sessionId: string,
+    impersonatorAdminId: string | undefined,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<AuthTokens & { user: AuthUser }> {
+    if (!impersonatorAdminId) {
+      throw new BadRequestException('Not in an impersonation session');
+    }
+
+    const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+    if (
+      !session?.userId ||
+      !session.impersonatorAdminId ||
+      session.impersonatorAdminId !== impersonatorAdminId
+    ) {
+      throw new ForbiddenException('Invalid impersonation session');
+    }
+
+    await this.prisma.session.delete({ where: { id: sessionId } });
+    try {
+      await this.redisService.del(CACHE_KEYS.SESSION(sessionId));
+    } catch {
+      // non-fatal
+    }
+
+    try {
+      await this.prisma.activityLog.create({
+        data: {
+          adminId: impersonatorAdminId,
+          userId: session.userId,
+          action: 'impersonation.ended',
+          entityType: 'user',
+          entityId: session.userId,
+          details: {},
+          ipAddress: ipAddress || null,
+        },
+      });
+    } catch {
+      // non-fatal
+    }
+
+    const tokens = await this.createSession(
+      impersonatorAdminId,
+      true,
+      false,
+      ipAddress,
+      userAgent,
+    );
+    const user = await this.getAuthUser(impersonatorAdminId, true);
+    if (!user) {
+      throw new UnauthorizedException('Unable to restore admin profile');
+    }
+    return { ...tokens, user };
+  }
+
   // =====================
   // SESSION MANAGEMENT
   // =====================
+
+  /** Keep values within Prisma @db.VarChar limits (long X-Forwarded-For chains exceed 45 chars). */
+  private clipClientField(value: string | undefined, max: number): string | null {
+    if (value == null || value === '') return null;
+    const s = String(value).trim();
+    if (!s) return null;
+    return s.length <= max ? s : s.slice(0, max);
+  }
 
   private async createSession(
     userId: string,
@@ -587,6 +710,7 @@ export class AuthService {
     rememberMe: boolean,
     ipAddress?: string,
     userAgent?: string,
+    opts?: { impersonatorAdminId?: string },
   ): Promise<AuthTokens> {
     const sessionId = uuidv4();
     const refreshToken = uuidv4();
@@ -595,14 +719,18 @@ export class AuthService {
       : this.REFRESH_TOKEN_EXPIRY;
     const expiresAt = new Date(Date.now() + expirySeconds * 1000);
 
+    const safeIp = this.clipClientField(ipAddress, 45);
+    const safeUa = this.clipClientField(userAgent, 500);
+
     // Create session in database
     await this.prisma.session.create({
       data: {
         id: sessionId,
         [isAdmin ? 'adminId' : 'userId']: userId,
+        impersonatorAdminId: opts?.impersonatorAdminId || null,
         refreshToken: await bcrypt.hash(refreshToken, this.BCRYPT_ROUNDS),
-        ipAddress,
-        userAgent,
+        ipAddress: safeIp ?? undefined,
+        userAgent: safeUa ?? undefined,
         expiresAt,
       },
     });
@@ -613,20 +741,25 @@ export class AuthService {
       email: '',
       isAdmin,
       sessionId,
+      ...(opts?.impersonatorAdminId ? { impersonatorAdminId: opts.impersonatorAdminId } : {}),
     };
 
     const accessToken = this.jwtService.sign(payload);
 
-    // Cache session info
-    await this.redisService.setJson(
-      CACHE_KEYS.SESSION(sessionId),
-      {
-        userId,
-        isAdmin,
-        expiresAt: expiresAt.toISOString(),
-      },
-      TIME.SESSION_CACHE_TTL_SECONDS,
-    );
+    try {
+      await this.redisService.setJson(
+        CACHE_KEYS.SESSION(sessionId),
+        {
+          userId,
+          isAdmin,
+          impersonatorAdminId: opts?.impersonatorAdminId,
+          expiresAt: expiresAt.toISOString(),
+        },
+        TIME.SESSION_CACHE_TTL_SECONDS,
+      );
+    } catch (err) {
+      this.logger.warn(`Session cache write skipped (Redis unavailable): ${err?.message || err}`);
+    }
 
     return {
       accessToken,
@@ -705,6 +838,9 @@ export class AuthService {
       email: '',
       isAdmin,
       sessionId,
+      ...(session.impersonatorAdminId
+        ? { impersonatorAdminId: session.impersonatorAdminId }
+        : {}),
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -715,6 +851,7 @@ export class AuthService {
       {
         userId,
         isAdmin,
+        impersonatorAdminId: session.impersonatorAdminId || undefined,
         expiresAt: expiresAt.toISOString(),
       },
       TIME.SESSION_CACHE_TTL_SECONDS,
@@ -986,17 +1123,28 @@ export class AuthService {
   async validateSession(sessionId: string): Promise<{
     userId: string;
     isAdmin: boolean;
+    impersonatorAdminId?: string;
   } | null> {
-    // Check cache first
-    const cached = await this.redisService.getJson<{
+    let cached: {
       userId: string;
       isAdmin: boolean;
+      impersonatorAdminId?: string;
       expiresAt: string;
-    }>(CACHE_KEYS.SESSION(sessionId));
+    } | null = null;
+
+    try {
+      cached = await this.redisService.getJson(CACHE_KEYS.SESSION(sessionId));
+    } catch (err) {
+      this.logger.warn(`Session cache read skipped (Redis unavailable): ${err?.message || err}`);
+    }
 
     if (cached) {
       if (new Date(cached.expiresAt) > new Date()) {
-        return { userId: cached.userId, isAdmin: cached.isAdmin };
+        return {
+          userId: cached.userId,
+          isAdmin: cached.isAdmin,
+          impersonatorAdminId: cached.impersonatorAdminId,
+        };
       }
     }
 
@@ -1019,18 +1167,26 @@ export class AuthService {
       return null;
     }
 
-    // Update cache
-    await this.redisService.setJson(
-      CACHE_KEYS.SESSION(sessionId),
-      {
-        userId,
-        isAdmin,
-        expiresAt: session.expiresAt.toISOString(),
-      },
-      TIME.SESSION_CACHE_TTL_SECONDS,
-    );
+    try {
+      await this.redisService.setJson(
+        CACHE_KEYS.SESSION(sessionId),
+        {
+          userId,
+          isAdmin,
+          impersonatorAdminId: session.impersonatorAdminId || undefined,
+          expiresAt: session.expiresAt.toISOString(),
+        },
+        TIME.SESSION_CACHE_TTL_SECONDS,
+      );
+    } catch (err) {
+      this.logger.warn(`Session cache refresh skipped (Redis unavailable): ${err?.message || err}`);
+    }
 
-    return { userId, isAdmin };
+    return {
+      userId,
+      isAdmin,
+      impersonatorAdminId: session.impersonatorAdminId || undefined,
+    };
   }
 
   async getAuthUser(userId: string, isAdmin: boolean): Promise<AuthUser | null> {
@@ -1114,11 +1270,11 @@ export class AuthService {
       }
       await this.prisma.loginAttempt.create({
         data: {
-          identifier: identifier || 'unknown',
-          ipAddress: ip || 'unknown',
-          userAgent: userAgent || null,
+          identifier: this.clipClientField(identifier, 255) || 'unknown',
+          ipAddress: this.clipClientField(ip, 45) || 'unknown',
+          userAgent: this.clipClientField(userAgent, 500),
           success,
-          failReason: failReason || null,
+          failReason: this.clipClientField(failReason, 200),
         },
       });
     } catch (err) {

@@ -93,8 +93,12 @@ export class MessagesController {
 
   @Get('window-status/:contactId/:pageId')
   @Roles('VIEW_ONLY')
-  async getWindowStatus(@Param('contactId') contactId: string, @Param('pageId') pageId: string) {
-    return this.sendApiService.getWindowStatus(contactId, pageId);
+  async getWindowStatus(
+    @WorkspaceId() workspaceId: string,
+    @Param('contactId') contactId: string,
+    @Param('pageId') pageId: string,
+  ) {
+    return this.sendApiService.getWindowStatus(contactId, pageId, workspaceId);
   }
 
   // ==========================================

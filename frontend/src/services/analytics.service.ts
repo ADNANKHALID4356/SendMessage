@@ -1,4 +1,5 @@
-import api from '@/lib/api-client';
+import api, { getResolvedWorkspaceId } from '@/lib/api-client';
+import { shouldUseTenantScopedApi } from '@/lib/tenant-api-paths';
 import { conversationService, messageService } from './conversation.service';
 import type { ConversationStats, MessageStats } from './conversation.service';
 
@@ -127,6 +128,13 @@ export const analyticsService = {
    * Get campaign analytics from dedicated endpoint
    */
   async getCampaignAnalytics(): Promise<CampaignAnalytics> {
+    if (shouldUseTenantScopedApi()) {
+      return api.get<CampaignAnalytics>('/tenant/analytics/campaigns');
+    }
+    const ws = getResolvedWorkspaceId();
+    if (ws) {
+      return api.get<CampaignAnalytics>(`/workspaces/${ws}/analytics/campaigns`);
+    }
     return api.get<CampaignAnalytics>('/analytics/campaigns');
   },
 
@@ -135,6 +143,13 @@ export const analyticsService = {
    */
   async getContactGrowth(days?: number): Promise<ContactGrowth> {
     const queryParams = days ? `?days=${days}` : '';
+    if (shouldUseTenantScopedApi()) {
+      return api.get<ContactGrowth>(`/tenant/analytics/contacts${queryParams}`);
+    }
+    const ws = getResolvedWorkspaceId();
+    if (ws) {
+      return api.get<ContactGrowth>(`/workspaces/${ws}/analytics/contacts${queryParams}`);
+    }
     return api.get<ContactGrowth>(`/analytics/contacts${queryParams}`);
   },
 
@@ -142,6 +157,13 @@ export const analyticsService = {
    * Get page performance from dedicated endpoint
    */
   async getPagePerformance(): Promise<PagePerformance[]> {
+    if (shouldUseTenantScopedApi()) {
+      return api.get<PagePerformance[]>('/tenant/analytics/pages');
+    }
+    const ws = getResolvedWorkspaceId();
+    if (ws) {
+      return api.get<PagePerformance[]>(`/workspaces/${ws}/analytics/pages`);
+    }
     return api.get<PagePerformance[]>('/analytics/pages');
   },
 
@@ -149,6 +171,13 @@ export const analyticsService = {
    * Get engagement metrics from dedicated endpoint
    */
   async getEngagementMetrics(): Promise<EngagementMetrics> {
+    if (shouldUseTenantScopedApi()) {
+      return api.get<EngagementMetrics>('/tenant/analytics/engagement');
+    }
+    const ws = getResolvedWorkspaceId();
+    if (ws) {
+      return api.get<EngagementMetrics>(`/workspaces/${ws}/analytics/engagement`);
+    }
     return api.get<EngagementMetrics>('/analytics/engagement');
   },
 };

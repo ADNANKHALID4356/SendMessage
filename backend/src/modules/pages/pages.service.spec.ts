@@ -94,17 +94,17 @@ describe('PagesService', () => {
 
   describe('findById', () => {
     it('should return page by id', async () => {
-      mockPrismaService.page.findUnique.mockResolvedValue(mockPage);
+      mockPrismaService.page.findFirst.mockResolvedValue(mockPage);
 
-      const result = await service.findById('page-1');
+      const result = await service.findById('page-1', 'workspace-1');
 
       expect(result).toEqual(mockPage);
     });
 
     it('should throw NotFoundException if not found', async () => {
-      mockPrismaService.page.findUnique.mockResolvedValue(null);
+      mockPrismaService.page.findFirst.mockResolvedValue(null);
 
-      await expect(service.findById('invalid')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('invalid', 'workspace-1')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -204,14 +204,14 @@ describe('PagesService', () => {
 
   describe('checkAndFixWebhook', () => {
     it('should fix webhook subscription', async () => {
-      mockPrismaService.page.findUnique.mockResolvedValue({
+      mockPrismaService.page.findFirst.mockResolvedValue({
         ...mockPage,
         isWebhookActive: false,
       });
       mockFbApiService.subscribePageToWebhook.mockResolvedValue(true);
       mockPrismaService.page.update.mockResolvedValue({});
 
-      const result = await service.checkAndFixWebhook('page-1');
+      const result = await service.checkAndFixWebhook('page-1', 'workspace-1');
 
       expect(result.fixed).toBe(true);
       expect(result.status).toBe(true);
@@ -220,14 +220,14 @@ describe('PagesService', () => {
 
   describe('validateToken', () => {
     it('should validate page token', async () => {
-      mockPrismaService.page.findUnique.mockResolvedValue(mockPage);
+      mockPrismaService.page.findFirst.mockResolvedValue(mockPage);
       mockFbApiService.debugToken.mockResolvedValue({
         is_valid: true,
         expires_at: 1704067200,
         scopes: ['pages_messaging'],
       });
 
-      const result = await service.validateToken('page-1');
+      const result = await service.validateToken('page-1', 'workspace-1');
 
       expect(result.valid).toBe(true);
       expect(result.scopes).toContain('pages_messaging');
@@ -236,7 +236,7 @@ describe('PagesService', () => {
 
   describe('syncPageInfo', () => {
     it('should sync page info from Facebook', async () => {
-      mockPrismaService.page.findUnique.mockResolvedValue(mockPage);
+      mockPrismaService.page.findFirst.mockResolvedValue(mockPage);
       mockFbApiService.getPageInfo.mockResolvedValue({
         name: 'Updated Page Name',
         category: 'Brand',
@@ -247,7 +247,7 @@ describe('PagesService', () => {
         name: 'Updated Page Name',
       });
 
-      const result = await service.syncPageInfo('page-1');
+      const result = await service.syncPageInfo('page-1', 'workspace-1');
 
       expect(mockPrismaService.page.update).toHaveBeenCalledWith({
         where: { id: 'page-1' },

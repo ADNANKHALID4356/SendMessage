@@ -27,9 +27,9 @@ export class PagesService {
   /**
    * Get page by ID
    */
-  async findById(id: string) {
-    const page = await this.prisma.page.findUnique({
-      where: { id },
+  async findById(id: string, workspaceId: string) {
+    const page = await this.prisma.page.findFirst({
+      where: { id, workspaceId },
     });
 
     if (!page) {
@@ -183,9 +183,9 @@ export class PagesService {
   /**
    * Check webhook status and resubscribe if needed
    */
-  async checkAndFixWebhook(id: string): Promise<{ fixed: boolean; status: boolean }> {
-    const page = await this.prisma.page.findUnique({
-      where: { id },
+  async checkAndFixWebhook(id: string, workspaceId: string): Promise<{ fixed: boolean; status: boolean }> {
+    const page = await this.prisma.page.findFirst({
+      where: { id, workspaceId },
     });
 
     if (!page) {
@@ -214,9 +214,9 @@ export class PagesService {
   /**
    * Get page with full details
    */
-  async getPageWithDetails(id: string) {
-    const page = await this.prisma.page.findUnique({
-      where: { id },
+  async getPageWithDetails(id: string, workspaceId: string) {
+    const page = await this.prisma.page.findFirst({
+      where: { id, workspaceId },
       include: {
         facebookAccount: {
           select: {
@@ -249,13 +249,13 @@ export class PagesService {
   /**
    * Validate page access token
    */
-  async validateToken(id: string): Promise<{
+  async validateToken(id: string, workspaceId: string): Promise<{
     valid: boolean;
     expiresAt?: number;
     scopes?: string[];
   }> {
-    const page = await this.prisma.page.findUnique({
-      where: { id },
+    const page = await this.prisma.page.findFirst({
+      where: { id, workspaceId },
     });
 
     if (!page) {
@@ -276,9 +276,9 @@ export class PagesService {
   /**
    * Sync page info from Facebook
    */
-  async syncPageInfo(id: string) {
-    const page = await this.prisma.page.findUnique({
-      where: { id },
+  async syncPageInfo(id: string, workspaceId: string) {
+    const page = await this.prisma.page.findFirst({
+      where: { id, workspaceId },
     });
 
     if (!page) {

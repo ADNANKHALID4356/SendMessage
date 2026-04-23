@@ -3,14 +3,18 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
   Query,
   UseGuards,
   ParseIntPipe,
+  ParseUUIDPipe,
   DefaultValuePipe,
   Res,
+  Ip,
+  Headers,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -22,6 +26,10 @@ import { SystemHealthService } from './system-health.service';
 import { ReportService, ReportType, ReportFormat } from './report.service';
 import { BackupService } from './backup.service';
 import { EmailService, SmtpConfig } from './email.service';
+import { WorkspacesService } from '../workspaces/workspaces.service';
+import { CreateWorkspaceDto, UpdateWorkspaceDto } from '../workspaces/dto';
+import { AuthService } from '../auth/auth.service';
+import { ImpersonateUserDto } from '../auth/dto/impersonate-user.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -34,6 +42,8 @@ export class AdminController {
     private readonly reportService: ReportService,
     private readonly backupService: BackupService,
     private readonly emailService: EmailService,
+    private readonly workspacesService: WorkspacesService,
+    private readonly authService: AuthService,
   ) {}
 
   // ===========================================
@@ -44,6 +54,129 @@ export class AdminController {
   @ApiOperation({ summary: 'Get admin dashboard stats' })
   async getDashboardStats() {
     return this.adminService.getDashboardStats();
+  }
+
+  // ===========================================
+  // Tenants (Workspaces)
+  // ===========================================
+
+  @Get('tenants')
+  @ApiOperation({ summary: 'List all tenants (workspaces)' })
+  async listTenants() {
+    return this.workspacesService.findAll();
+  }
+
+  @Post('tenants')
+  @ApiOperation({ summary: 'Create a tenant (workspace)' })
+  async createTenant(@Body() dto: CreateWorkspaceDto, @CurrentUser() user: any) {
+    const workspace = await this.workspacesService.create(dto);
+    await this.adminService.logActivity({
+      adminId: user.userId,
+      action: 'tenant.created',
+      entityType: 'workspace',
+      entityId: workspace.id,
+      details: { slug: (workspace as any).slug, name: workspace.name },
+    });
+    return workspace;
+  }
+
+  // ===========================================
+  // Businesses (Subdomain Tenants) — NEW
+  // ===========================================
+
+  @Get('businesses')
+  @ApiOperation({ summary: 'List all businesses (tenants / subdomains)' })
+  async listBusinesses() {
+    return this.adminService.listBusinesses();
+  }
+
+  @Post('businesses')
+  @ApiOperation({ summary: 'Create a business (tenant / subdomain)' })
+  async createBusiness(
+    @Body() body: { slug: string; name: string; planCode?: 'BASIC' | 'STANDARD' | 'GROWTH' | 'PRO' | 'BUSINESS' },
+    @CurrentUser() user: any,
+  ) {
+    const tenant = await this.adminService.createBusiness(body);
+    await this.adminService.logActivity({
+      adminId: user.userId,
+      action: 'business.created',
+      entityType: 'tenant',
+      entityId: tenant.id,
+      details: { slug: tenant.slug, planCode: tenant.planCode },
+    });
+    return tenant;
+  }
+
+  @Patch('businesses/:tenantId')
+  @ApiOperation({ summary: 'Update a business (plan/status)' })
+  async updateBusiness(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Body() body: { status?: 'ACTIVE' | 'SUSPENDED' | 'DELETED'; planCode?: 'BASIC' | 'STANDARD' | 'GROWTH' | 'PRO' | 'BUSINESS' },
+    @CurrentUser() user: any,
+  ) {
+    const updated = await this.adminService.updateBusiness(tenantId, body);
+    await this.adminService.logActivity({
+      adminId: user.userId,
+      action: 'business.updated',
+      entityType: 'tenant',
+      entityId: tenantId,
+      details: body,
+    });
+    return updated;
+  }
+
+  @Get('businesses/:tenantId/usage')
+  @ApiOperation({ summary: 'Get business usage vs plan limits' })
+  async getBusinessUsage(@Param('tenantId', ParseUUIDPipe) tenantId: string) {
+    return this.adminService.getBusinessUsage(tenantId);
+  }
+
+  @Get('tenants/health')
+  @ApiOperation({ summary: 'Per-tenant counts (contacts, campaigns, pages)' })
+  async getTenantsHealth() {
+    return this.adminService.getTenantHealthSummary();
+  }
+
+  @Post('impersonate')
+  @ApiOperation({ summary: 'Start acting as a user (returns user JWT + refresh)' })
+  async impersonate(
+    @Body() dto: ImpersonateUserDto,
+    @CurrentUser() user: { userId: string },
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    const tokens = await this.authService.startImpersonation(
+      user.userId,
+      dto.userId,
+      ipAddress,
+      userAgent,
+    );
+    await this.adminService.logActivity({
+      adminId: user.userId,
+      action: 'impersonation.started',
+      entityType: 'user',
+      entityId: dto.userId,
+      ipAddress,
+    });
+    return tokens;
+  }
+
+  @Patch('tenants/:workspaceId')
+  @ApiOperation({ summary: 'Update a tenant workspace (e.g. name, isActive)' })
+  async updateTenant(
+    @Param('workspaceId', ParseUUIDPipe) workspaceId: string,
+    @Body() dto: UpdateWorkspaceDto,
+    @CurrentUser() user: { userId: string },
+  ) {
+    const workspace = await this.workspacesService.update(workspaceId, dto);
+    await this.adminService.logActivity({
+      adminId: user.userId,
+      action: 'tenant.updated',
+      entityType: 'workspace',
+      entityId: workspaceId,
+      details: dto as Record<string, unknown>,
+    });
+    return workspace;
   }
 
   // ===========================================

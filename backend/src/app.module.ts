@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_FILTER } from '@nestjs/core';
@@ -10,6 +10,7 @@ import { RedisModule } from './redis/redis.module';
 import { EncryptionModule } from './common/encryption.module';
 import { envValidationSchema } from './config/env.validation';
 import { AllExceptionsFilter } from './common/http-exception.filter';
+import { TenantHostMiddleware } from './common/tenant/tenant-host.middleware';
 
 // Feature modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -26,6 +27,7 @@ import { SegmentsModule } from './modules/segments/segments.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { HealthModule } from './modules/health/health.module';
+import { TenantAdminModule } from './modules/tenant-admin/tenant-admin.module';
 
 @Module({
   imports: [
@@ -75,6 +77,7 @@ import { HealthModule } from './modules/health/health.module';
     WebhooksModule,
     AnalyticsModule,
     HealthModule,
+    TenantAdminModule,
   ],
   providers: [
     // Global exception filter — standardised error responses
@@ -87,6 +90,11 @@ import { HealthModule } from './modules/health/health.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    TenantHostMiddleware,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TenantHostMiddleware).forRoutes('*');
+  }
+}

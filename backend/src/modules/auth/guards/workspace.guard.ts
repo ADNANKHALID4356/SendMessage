@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PERMISSION_KEY } from '../decorators/permission.decorator';
 import { PermissionLevel } from '@messagesender/shared';
+import { resolveTenantWorkspaceId } from '../../../common/tenant/resolve-tenant-workspace-id';
 
 const PERMISSION_HIERARCHY: Record<PermissionLevel, number> = {
   [PermissionLevel.VIEW_ONLY]: 1,
@@ -21,18 +22,40 @@ export class WorkspaceGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    // Admin has full access
+    // Admin has full access — still attach workspace context when present (params/header/host)
     if (user?.isAdmin) {
+      const wid = resolveTenantWorkspaceId(request, { isAdmin: true });
+      if (wid) {
+        if (request.tenantId) {
+          const inTenant = await this.prisma.workspace.findFirst({
+            where: { id: wid, tenantId: request.tenantId },
+            select: { id: true },
+          });
+          if (!inTenant) {
+            throw new ForbiddenException('Workspace does not belong to tenant');
+          }
+        }
+        request.tenantWorkspaceId = wid;
+      }
       return true;
     }
 
-    // Get workspace ID from params, query, or header
-    const workspaceId =
-      request.params.workspaceId || request.query.workspaceId || request.headers['x-workspace-id'];
+    const workspaceId = resolveTenantWorkspaceId(request, {
+      isAdmin: false,
+      requirePresent: true,
+    })!;
 
-    if (!workspaceId) {
-      throw new ForbiddenException('Workspace ID is required');
+    if (request.tenantId) {
+      const inTenant = await this.prisma.workspace.findFirst({
+        where: { id: workspaceId, tenantId: request.tenantId },
+        select: { id: true },
+      });
+      if (!inTenant) {
+        throw new ForbiddenException('Workspace does not belong to tenant');
+      }
     }
+
+    request.tenantWorkspaceId = workspaceId;
 
     // Get required permission level
     const requiredPermission = this.reflector.get<PermissionLevel>(
@@ -54,6 +77,9 @@ export class WorkspaceGuard implements CanActivate {
       throw new ForbiddenException('No access to this workspace');
     }
 
+    // Attach workspace access to request for later use
+    request.workspaceAccess = access;
+
     // If no specific permission required, just check access exists
     if (!requiredPermission) {
       return true;
@@ -66,9 +92,6 @@ export class WorkspaceGuard implements CanActivate {
     if (userLevel < requiredLevel) {
       throw new ForbiddenException('Insufficient permissions');
     }
-
-    // Attach workspace access to request for later use
-    request.workspaceAccess = access;
 
     return true;
   }

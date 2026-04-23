@@ -77,6 +77,7 @@ describe('MessagesService', () => {
       create: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
       count: jest.fn(),
@@ -100,7 +101,7 @@ describe('MessagesService', () => {
   };
 
   const mockSendApiService = {
-    sendMessage: jest.fn().mockResolvedValue({ success: true, messageId: 'mid.facebook123' }),
+    sendMessage: jest.fn().mockResolvedValue({ success: true, messageId: mockMessageId }),
     sendTextMessage: jest.fn(),
     sendAttachmentMessage: jest.fn(),
     sendTemplateMessage: jest.fn(),
@@ -145,6 +146,7 @@ describe('MessagesService', () => {
     it('should send a message successfully', async () => {
       mockPrismaService.conversation.findFirst.mockResolvedValue(mockConversation);
       mockPrismaService.message.create.mockResolvedValue(mockMessage);
+      mockPrismaService.message.findUnique.mockResolvedValue(mockMessage);
       mockPrismaService.conversation.update.mockResolvedValue(mockConversation);
       mockPrismaService.message.update.mockResolvedValue({
         ...mockMessage,
@@ -153,7 +155,7 @@ describe('MessagesService', () => {
 
       const result = await service.sendMessage(mockWorkspaceId, mockUserId, sendDto);
 
-      expect(mockPrismaService.message.create).toHaveBeenCalled();
+      expect(mockSendApiService.sendMessage).toHaveBeenCalled();
       expect(mockContactsService.updateInteraction).toHaveBeenCalledWith(mockContactId, 'outbound');
       expect(result).not.toBeNull();
       expect(result?.status).toBe('SENT');
@@ -181,6 +183,7 @@ describe('MessagesService', () => {
         .mockResolvedValueOnce(mockConversation); // Second call in sendMessage: finds the created conversation
       mockPrismaService.conversation.create.mockResolvedValue(mockConversation);
       mockPrismaService.message.create.mockResolvedValue(mockMessage);
+      mockPrismaService.message.findUnique.mockResolvedValue(mockMessage);
       mockPrismaService.conversation.update.mockResolvedValue(mockConversation);
       mockPrismaService.message.update.mockResolvedValue(mockMessage);
 

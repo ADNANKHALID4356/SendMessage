@@ -26,6 +26,8 @@ import { AdminGuard } from './guards/admin.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginRateLimitGuard } from './guards/rate-limit.guard';
 import { Throttle } from '@nestjs/throttler';
+import { Request } from 'express';
+import { Req } from '@nestjs/common';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -82,8 +84,8 @@ export class AuthController {
   @ApiOperation({ summary: 'User signup (requires admin approval)' })
   @ApiResponse({ status: 201, description: 'Registration successful, pending approval' })
   @ApiResponse({ status: 409, description: 'Email already registered' })
-  async userSignup(@Body() signupDto: UserSignupDto) {
-    return this.authService.userSignup(signupDto);
+  async userSignup(@Body() signupDto: UserSignupDto, @Req() req: Request & { tenantId?: string }) {
+    return this.authService.userSignup(signupDto, req.tenantId);
   }
 
   @Post('login')
@@ -125,8 +127,39 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile retrieved' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(@CurrentUser() user: { userId: string; isAdmin: boolean }) {
-    return this.authService.getAuthUser(user.userId, user.isAdmin);
+  async getProfile(@CurrentUser() user: {
+    userId: string;
+    isAdmin: boolean;
+    impersonatorAdminId?: string;
+  }) {
+    const profile = await this.authService.getAuthUser(user.userId, user.isAdmin);
+    if (!profile) {
+      return null;
+    }
+    if (user.impersonatorAdminId) {
+      return { ...profile, impersonatorAdminId: user.impersonatorAdminId };
+    }
+    return profile;
+  }
+
+  @Post('impersonation/end')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'End impersonation and return super-admin session tokens' })
+  @ApiResponse({ status: 200, description: 'Admin tokens issued' })
+  @ApiResponse({ status: 400, description: 'Not impersonating' })
+  async endImpersonation(
+    @CurrentUser() user: { sessionId: string; impersonatorAdminId?: string },
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.authService.endImpersonation(
+      user.sessionId,
+      user.impersonatorAdminId,
+      ipAddress,
+      userAgent,
+    );
   }
 
   @Patch('profile')

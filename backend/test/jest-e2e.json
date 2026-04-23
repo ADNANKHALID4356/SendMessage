@@ -10,5 +10,5 @@
     "^@messagesender/shared$": "<rootDir>/../../shared/src/index.ts",
     "^@/(.*)$": "<rootDir>/../src/$1"
   },
-  "setupFilesAfterEnv": ["<rootDir>/setup.ts"]
+  "setupFilesAfterEnv": ["<rootDir>/jest-e2e-setup.ts"]
 }

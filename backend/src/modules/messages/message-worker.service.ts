@@ -6,6 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SendApiService, MessageContent } from './send-api.service';
 import { RateLimitService } from './rate-limit.service';
 import { MessageQueueService, MessageJobData, JobResult } from './message-queue.service';
+import { TenantQuotaService } from '../../common/tenant/tenant-quota.service';
 import { MessageStatus, MessageType } from '@prisma/client';
 
 @Injectable()
@@ -21,6 +22,7 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
     private prisma: PrismaService,
     private sendApiService: SendApiService,
     private rateLimitService: RateLimitService,
+    private tenantQuotaService: TenantQuotaService,
   ) {}
 
   async onModuleInit() {
@@ -122,6 +124,10 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
+      if (!(await this.assertJobTenantScope(workspaceId, pageId, contactId))) {
+        return { success: false, error: 'Tenant scope validation failed', contactId };
+      }
+
       // Check rate limit
       const rateLimitOk = await this.rateLimitService.checkPageMessageLimit(pageId);
       if (!rateLimitOk) {
@@ -130,6 +136,8 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       }
 
       await this.rateLimitService.consumePageMessageQuota(pageId);
+
+      await this.tenantQuotaService.consumeSendSlot(workspaceId);
 
       // Build message content
       const messageContent: MessageContent = {
@@ -177,6 +185,10 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
+      if (!(await this.assertJobTenantScope(workspaceId, pageId, contactId, campaignId))) {
+        return { success: false, error: 'Tenant scope validation failed', contactId };
+      }
+
       // Check rate limit
       const rateLimitOk = await this.rateLimitService.checkPageMessageLimit(pageId);
       if (!rateLimitOk) {
@@ -184,6 +196,8 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       }
 
       await this.rateLimitService.consumePageMessageQuota(pageId);
+
+      await this.tenantQuotaService.consumeSendSlot(workspaceId);
 
       const messageContent: MessageContent = {
         text: content.text,
@@ -258,5 +272,35 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
         error: errMsg,
       };
     }
+  }
+
+  /** Ensures queue job page/contact/campaign belong to the claimed workspace (no cross-tenant sends). */
+  private async assertJobTenantScope(
+    workspaceId: string,
+    pageId: string,
+    contactId: string,
+    campaignId?: string,
+  ): Promise<boolean> {
+    const [page, contact] = await Promise.all([
+      this.prisma.page.findFirst({ where: { id: pageId, workspaceId }, select: { id: true } }),
+      this.prisma.contact.findFirst({ where: { id: contactId, workspaceId }, select: { id: true } }),
+    ]);
+    if (!page || !contact) {
+      this.logger.error(
+        `Tenant scope mismatch: page=${pageId} contact=${contactId} workspace=${workspaceId}`,
+      );
+      return false;
+    }
+    if (campaignId) {
+      const campaign = await this.prisma.campaign.findFirst({
+        where: { id: campaignId, workspaceId },
+        select: { id: true },
+      });
+      if (!campaign) {
+        this.logger.error(`Tenant scope mismatch: campaign=${campaignId} workspace=${workspaceId}`);
+        return false;
+      }
+    }
+    return true;
   }
 }

@@ -23,17 +23,39 @@ async function main() {
 
   console.log(`✅ Admin created: ${admin.email}`);
 
+  // ===========================================
+  // Tenant (Business) seed
+  // ===========================================
+
+  const tenant = await prisma.tenant.upsert({
+    where: { slug: 'demo' },
+    update: { name: 'Demo Business', status: 'ACTIVE', planCode: 'BUSINESS' },
+    create: {
+      slug: 'demo',
+      name: 'Demo Business',
+      status: 'ACTIVE',
+      planCode: 'BUSINESS',
+    },
+  });
+
+  console.log(`✅ Tenant created: ${tenant.slug} (${tenant.planCode})`);
+
   // Create default workspace
   const workspace = await prisma.workspace.upsert({
     where: { id: 'default-workspace' },
-    update: {},
+    update: {
+      slug: 'default',
+      tenantId: tenant.id,
+    },
     create: {
       id: 'default-workspace',
+      slug: 'default',
       name: 'Default Workspace',
       description: 'Default workspace for testing',
       colorTheme: '#3B82F6',
       isActive: true,
       sortOrder: 0,
+      tenantId: tenant.id,
     },
   });
 
@@ -46,11 +68,13 @@ async function main() {
     where: { email: 'user@messagesender.com' },
     update: {},
     create: {
+      tenantId: tenant.id,
       email: 'user@messagesender.com',
       passwordHash: userPassword,
       firstName: 'Test',
       lastName: 'User',
       status: 'ACTIVE',
+      systemRole: 'TENANT_ADMIN',
     },
   });
 

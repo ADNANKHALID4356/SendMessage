@@ -96,7 +96,9 @@ export class SponsoredMessageService {
   // ===========================================
 
   async createSponsoredCampaign(params: SponsoredMessageParams): Promise<SponsoredCampaignResult> {
-    const page = await this.prisma.page.findUnique({ where: { id: params.pageId } });
+    const page = await this.prisma.page.findFirst({
+      where: { id: params.pageId, workspaceId: params.workspaceId },
+    });
     if (!page) throw new NotFoundException('Page not found');
 
     const campaignId = `smc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -105,7 +107,9 @@ export class SponsoredMessageService {
     if (params.targetContactIds?.length) {
       estimatedReach = params.targetContactIds.length;
     } else {
-      estimatedReach = await this.prisma.contact.count({ where: { pageId: params.pageId } });
+      estimatedReach = await this.prisma.contact.count({
+        where: { pageId: params.pageId, workspaceId: params.workspaceId },
+      });
     }
 
     const stored: StoredCampaign = {
@@ -142,8 +146,8 @@ export class SponsoredMessageService {
     }
 
     // Attempt to create the ad on Facebook Marketing API
-    const page = await this.prisma.page.findUnique({
-      where: { id: found.campaign.params.pageId },
+    const page = await this.prisma.page.findFirst({
+      where: { id: found.campaign.params.pageId, workspaceId: found.workspaceId },
       include: { facebookAccount: true },
     });
 
@@ -250,8 +254,8 @@ export class SponsoredMessageService {
     // If we have a Facebook campaign ID, fetch real insights
     if (found.campaign.fbCampaignId) {
       try {
-        const page = await this.prisma.page.findUnique({
-          where: { id: found.campaign.params.pageId },
+        const page = await this.prisma.page.findFirst({
+          where: { id: found.campaign.params.pageId, workspaceId: found.workspaceId },
         });
         if (page) {
           const accessToken = this.encryption.decrypt(page.accessToken);

@@ -163,6 +163,23 @@ describe('AuthService', () => {
         isAdmin: true,
       });
     });
+
+    it('should resolve admin by email when username does not match', async () => {
+      mockPrismaService.admin.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockAdmin);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      const result = await authService.validateAdmin('Admin@Example.com', 'correctpassword');
+
+      expect(mockPrismaService.admin.findUnique).toHaveBeenNthCalledWith(1, {
+        where: { username: 'Admin@Example.com' },
+      });
+      expect(mockPrismaService.admin.findUnique).toHaveBeenNthCalledWith(2, {
+        where: { email: 'admin@example.com' },
+      });
+      expect(result?.isAdmin).toBe(true);
+    });
   });
 
   describe('validateUser', () => {

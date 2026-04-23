@@ -2,11 +2,16 @@
  * @jest-environment jsdom
  */
 
+jest.mock('../lib/api-client');
+
+const mockShouldUseTenantScopedApi = jest.fn(() => false);
+jest.mock('@/lib/tenant-api-paths', () => ({
+  shouldUseTenantScopedApi: () => mockShouldUseTenantScopedApi(),
+}));
+
 import { pageService } from './page.service';
 import api from '../lib/api-client';
 
-// Mock the API client
-jest.mock('../lib/api-client');
 const mockedApi = api as jest.Mocked<typeof api>;
 
 describe('PageService', () => {
@@ -26,6 +31,7 @@ describe('PageService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockShouldUseTenantScopedApi.mockImplementation(() => false);
   });
 
   describe('getPages', () => {
@@ -150,6 +156,28 @@ describe('PageService', () => {
         '/workspaces/workspace-1/pages/page-1/webhook/fix'
       );
       expect(result).toEqual(mockStatus);
+    });
+  });
+
+  describe('tenant-first paths', () => {
+    beforeEach(() => {
+      mockShouldUseTenantScopedApi.mockImplementation(() => true);
+    });
+
+    afterEach(() => {
+      mockShouldUseTenantScopedApi.mockImplementation(() => false);
+    });
+
+    it('getPages uses /tenant/pages', async () => {
+      mockedApi.get.mockResolvedValue([mockPage]);
+      await pageService.getPages('ignored');
+      expect(mockedApi.get).toHaveBeenCalledWith('/tenant/pages');
+    });
+
+    it('getPage uses /tenant/pages/:id', async () => {
+      mockedApi.get.mockResolvedValue(mockPage);
+      await pageService.getPage('ignored', 'page-1');
+      expect(mockedApi.get).toHaveBeenCalledWith('/tenant/pages/page-1');
     });
   });
 });

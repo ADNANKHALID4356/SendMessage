@@ -28,6 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
+import { getTenantSlugFromHost } from '@/lib/tenant';
 
 interface NavItem {
   title: string;
@@ -54,6 +55,7 @@ const managementNavItems: NavItem[] = [
   { title: 'Facebook Pages', href: '/pages', icon: Facebook },
   { title: 'Templates', href: '/templates', icon: FileCode },
   { title: 'Tags', href: '/tags', icon: Tags },
+  { title: 'Businesses', href: '/businesses', icon: Building2, adminOnly: true },
   { title: 'Team Members', href: '/team', icon: UserCog, adminOnly: true },
   { title: 'System Health', href: '/health', icon: Activity },
   { title: 'Settings', href: '/settings', icon: Settings },
@@ -92,10 +94,17 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     };
   }, [mobileOpen]);
 
+  const tenantSlug = typeof window !== 'undefined' ? getTenantSlugFromHost() : null;
+  const hideWorkspaceNav = Boolean(tenantSlug && !user?.isAdmin);
+
   const NavLink = ({ item }: { item: NavItem }) => {
     const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
 
     if (item.adminOnly && !user?.isAdmin) {
+      return null;
+    }
+
+    if (hideWorkspaceNav && item.href === '/workspaces') {
       return null;
     }
 

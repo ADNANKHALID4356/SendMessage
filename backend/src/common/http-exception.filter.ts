@@ -57,8 +57,28 @@ export class AllExceptionsFilter implements ExceptionFilter {
           message = 'Related record not found';
           error = 'Bad Request';
           break;
+        case 'P2000': // Value too long for column
+          status = HttpStatus.BAD_REQUEST;
+          message = 'Invalid request data (value too long for database column)';
+          error = 'Bad Request';
+          break;
+        case 'P2021': // Table does not exist
+          status = HttpStatus.INTERNAL_SERVER_ERROR;
+          message =
+            'Database schema is out of date (missing table). Run: pnpm --filter backend prisma migrate deploy';
+          error = 'Internal Server Error';
+          break;
+        case 'P2022': // Column does not exist (common: sessions.impersonator_admin_id, workspaces.slug)
+          {
+            const meta = exception.meta as { column?: string };
+            const col = typeof meta?.column === 'string' ? meta.column : 'unknown';
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            message = `Database is missing column "${col}". Prefer: pnpm --filter backend prisma migrate deploy — or repair: pnpm --filter backend db:repair-tenant-columns`;
+            error = 'Internal Server Error';
+          }
+          break;
         default:
-          message = 'A database error occurred';
+          message = `A database error occurred (code ${exception.code}). Run migrations (pnpm --filter backend prisma migrate deploy) and check API logs.`;
       }
     }
     // ── Prisma validation errors ──

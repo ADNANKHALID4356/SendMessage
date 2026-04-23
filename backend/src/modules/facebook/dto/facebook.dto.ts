@@ -13,6 +13,14 @@ export class InitiateOAuthDto {
   redirectUrl?: string;
 }
 
+/** Tenant-first OAuth initiate (workspace comes from subdomain / guard) */
+export class InitiateOAuthTenantDto {
+  @ApiPropertyOptional({ description: 'Redirect URL after OAuth completion' })
+  @IsString()
+  @IsOptional()
+  redirectUrl?: string;
+}
+
 export class OAuthCallbackDto {
   @ApiProperty({ description: 'Authorization code from Facebook' })
   @IsString()

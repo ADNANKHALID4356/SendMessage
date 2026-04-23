@@ -8,8 +8,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { WorkspaceGuard } from './guards/workspace.guard';
 import { LoginRateLimitGuard } from './guards/rate-limit.guard';
 import { RedisModule } from '../../redis/redis.module';
+import { TenantPlanService } from '../../common/tenant/tenant-plan.service';
 
 @Module({
   imports: [
@@ -33,8 +35,10 @@ import { RedisModule } from '../../redis/redis.module';
     LocalStrategy,
     JwtAuthGuard,
     RolesGuard,
+    WorkspaceGuard,
     LoginRateLimitGuard,
+    TenantPlanService,
   ],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, LoginRateLimitGuard],
+  exports: [AuthService, JwtAuthGuard, RolesGuard, WorkspaceGuard, LoginRateLimitGuard, TenantPlanService],
 })
 export class AuthModule {}

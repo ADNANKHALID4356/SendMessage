@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface FacebookConfig {
@@ -86,10 +86,29 @@ export class FacebookConfigService {
     };
   }
 
+  assertConfigured(): void {
+    const appId = (this.appId || '').trim();
+    const secret = (this.appSecret || '').trim();
+
+    // Common placeholder patterns in local env files
+    const looksPlaceholder =
+      appId.startsWith('your_') ||
+      secret.startsWith('your_') ||
+      appId === '' ||
+      secret === '';
+
+    if (looksPlaceholder) {
+      throw new BadRequestException(
+        'Facebook app is not configured. Set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET in backend/.env (and restart the backend).',
+      );
+    }
+  }
+
   /**
    * Build the OAuth authorization URL
    */
   buildAuthUrl(redirectUri: string, state: string): string {
+    this.assertConfigured();
     const params = new URLSearchParams({
       client_id: this.appId,
       redirect_uri: redirectUri,
@@ -105,6 +124,7 @@ export class FacebookConfigService {
    * Build the token exchange URL
    */
   buildTokenUrl(code: string, redirectUri: string): string {
+    this.assertConfigured();
     const params = new URLSearchParams({
       client_id: this.appId,
       client_secret: this.appSecret,

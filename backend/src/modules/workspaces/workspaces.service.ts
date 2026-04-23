@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateWorkspaceDto, UpdateWorkspaceDto, AssignUserDto } from './dto';
+import { TenantPlanService } from '../../common/tenant/tenant-plan.service';
 
 const MAX_WORKSPACES = 5;
 
@@ -14,35 +15,70 @@ type PermissionLevel = 'VIEW_ONLY' | 'OPERATOR' | 'MANAGER';
 
 @Injectable()
 export class WorkspacesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private tenantPlanService: TenantPlanService,
+  ) {}
 
   /**
    * Create a new workspace
    */
-  async create(dto: CreateWorkspaceDto) {
-    // Check workspace limit
-    const count = await this.prisma.workspace.count();
-    if (count >= MAX_WORKSPACES) {
-      throw new BadRequestException(
-        `Maximum of ${MAX_WORKSPACES} workspaces allowed. Please contact the developer to expand.`,
-      );
+  async create(dto: CreateWorkspaceDto, tenantId?: string | null) {
+    if (tenantId) {
+      await this.tenantPlanService.assertCanCreateWorkspace(tenantId);
+    } else {
+      // Legacy global cap (kept as a safety for single-tenant installs)
+      const count = await this.prisma.workspace.count();
+      if (count >= MAX_WORKSPACES) {
+        throw new BadRequestException(
+          `Maximum of ${MAX_WORKSPACES} workspaces allowed. Please contact the developer to expand.`,
+        );
+      }
     }
 
-    // Get next sort order
+    // Get next sort order (scoped per tenant when applicable)
     const maxOrder = await this.prisma.workspace.aggregate({
+      where: tenantId ? { tenantId } : undefined,
       _max: { sortOrder: true },
     });
     const nextOrder = (maxOrder._max.sortOrder ?? -1) + 1;
 
+    const slug = await this.resolveUniqueWorkspaceSlug(dto.slug, dto.name);
+
     return this.prisma.workspace.create({
       data: {
+        ...(tenantId ? { tenantId } : {}),
         name: dto.name,
+        slug,
         description: dto.description,
         logoUrl: dto.logoUrl,
         colorTheme: dto.colorTheme || '#3B82F6',
         sortOrder: nextOrder,
       },
     });
+  }
+
+  /**
+   * Public tenant bootstrap payload (safe to expose pre-auth for subdomain onboarding UIs)
+   */
+  async findPublicBySlug(slug: string) {
+    const normalized = this.normalizeSlug(slug);
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { slug: normalized },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        colorTheme: true,
+        isActive: true,
+      },
+    });
+
+    if (!workspace) {
+      throw new NotFoundException('Workspace not found');
+    }
+
+    return workspace;
   }
 
   /**
@@ -527,5 +563,37 @@ export class WorkspacesService {
       return { success: true };
     }
     return { success: false };
+  }
+
+  private normalizeSlug(input: string): string {
+    return input.trim().toLowerCase();
+  }
+
+  private slugifyName(name: string): string {
+    const base = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48);
+    return base.length >= 2 ? base : `ws-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  private async resolveUniqueWorkspaceSlug(explicitSlug: string | undefined, name: string): Promise<string> {
+    const preferred = explicitSlug
+      ? this.normalizeSlug(explicitSlug)
+      : this.slugifyName(name);
+
+    let candidate = preferred;
+    for (let i = 0; i < 25; i++) {
+      const exists = await this.prisma.workspace.findUnique({
+        where: { slug: candidate },
+        select: { id: true },
+      });
+      if (!exists) return candidate;
+      candidate = `${preferred}-${i + 2}`;
+    }
+
+    throw new BadRequestException('Unable to allocate a unique workspace slug');
   }
 }

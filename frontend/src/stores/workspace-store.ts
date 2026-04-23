@@ -4,6 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 export interface WorkspaceInfo {
   id: string;
   name: string;
+  slug?: string;
   description?: string;
   logoUrl?: string;
   colorTheme?: string;

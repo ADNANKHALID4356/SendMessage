@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as fs from 'fs';
@@ -61,6 +61,14 @@ export class BackupService {
   // ===========================================
 
   async createBackup(workspaceId: string): Promise<BackupRecord> {
+    const ws = await this.prisma.workspace.findFirst({
+      where: { id: workspaceId },
+      select: { id: true },
+    });
+    if (!ws) {
+      throw new BadRequestException('Backup target workspace not found');
+    }
+
     const backupId = `bkp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const jsonFilename = `backup_${workspaceId}_${timestamp}.json`;
@@ -170,6 +178,11 @@ export class BackupService {
       // Restore contacts
       if (data.contacts?.length) {
         for (const c of data.contacts) {
+          if (c.workspaceId && c.workspaceId !== backup.workspaceId) {
+            throw new Error(
+              `Restore rejected: contact belongs to workspace ${c.workspaceId}, backup is for ${backup.workspaceId}`,
+            );
+          }
           await this.prisma.contact.upsert({
             where: { pageId_psid: { pageId: c.pageId, psid: c.psid } },
             create: {

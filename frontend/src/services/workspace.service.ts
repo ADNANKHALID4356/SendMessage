@@ -7,6 +7,7 @@ import api, { PaginatedResponse } from '@/lib/api-client';
 export interface Workspace {
   id: string;
   name: string;
+  slug?: string;
   description: string;
   status: 'active' | 'inactive';
   settings: WorkspaceSettings;
@@ -77,6 +78,15 @@ export interface WorkspaceListParams {
   search?: string;
 }
 
+/** Public tenant bootstrap (matches backend findPublicBySlug) */
+export interface PublicWorkspaceBootstrap {
+  id: string;
+  name: string;
+  slug: string;
+  colorTheme: string;
+  isActive: boolean;
+}
+
 // ===========================================
 // Workspace Service
 // ===========================================
@@ -86,6 +96,12 @@ export const workspaceService = {
    * Get all workspaces for current user
    * Uses /workspaces/my endpoint which works for both admin and regular users
    */
+  async getPublicWorkspaceBySlug(slug: string): Promise<PublicWorkspaceBootstrap> {
+    return api.get<PublicWorkspaceBootstrap>(
+      `/workspaces/public/by-slug/${encodeURIComponent(slug)}`,
+    );
+  },
+
   async getWorkspaces(params?: WorkspaceListParams): Promise<PaginatedResponse<Workspace>> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());

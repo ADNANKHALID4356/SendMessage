@@ -54,7 +54,7 @@ describe('Admin Module Integration Tests', () => {
     conversation: { findMany: jest.fn(), count: jest.fn() },
     page: { count: jest.fn(), findMany: jest.fn() },
     segment: { count: jest.fn(), findMany: jest.fn() },
-    workspace: { findUnique: jest.fn(), count: jest.fn() },
+    workspace: { findUnique: jest.fn(), findFirst: jest.fn(), count: jest.fn() },
     systemSetting: { findUnique: jest.fn(), upsert: jest.fn() },
   };
 
@@ -83,6 +83,7 @@ describe('Admin Module Integration Tests', () => {
     mockPrisma.segment.count.mockResolvedValue(0);
     mockPrisma.segment.findMany.mockResolvedValue([]);
     mockPrisma.workspace.findUnique.mockResolvedValue({ id: 'ws1', name: 'Test' });
+    mockPrisma.workspace.findFirst.mockResolvedValue({ id: 'ws1' });
     mockPrisma.workspace.count.mockResolvedValue(1);
 
     // Stateful systemSetting mocks

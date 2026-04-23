@@ -1,14 +1,20 @@
-import { analyticsService } from './analytics.service';
-import api from '@/lib/api-client';
-import { conversationService, messageService } from './conversation.service';
-
 jest.mock('@/lib/api-client', () => ({
   __esModule: true,
   default: {
     get: jest.fn(),
     post: jest.fn(),
   },
+  getResolvedWorkspaceId: jest.fn(() => 'ws-fixed'),
 }));
+
+const mockShouldUseTenantScopedApi = jest.fn(() => false);
+jest.mock('@/lib/tenant-api-paths', () => ({
+  shouldUseTenantScopedApi: () => mockShouldUseTenantScopedApi(),
+}));
+
+import { analyticsService } from './analytics.service';
+import api from '@/lib/api-client';
+import { conversationService, messageService } from './conversation.service';
 
 jest.mock('./conversation.service', () => ({
   conversationService: {
@@ -24,6 +30,10 @@ const mockConversationService = conversationService as jest.Mocked<typeof conver
 const mockMessageService = messageService as jest.Mocked<typeof messageService>;
 
 describe('AnalyticsService', () => {
+  beforeEach(() => {
+    mockShouldUseTenantScopedApi.mockImplementation(() => false);
+  });
+
   afterEach(() => jest.clearAllMocks());
 
   describe('getOverview', () => {
@@ -37,21 +47,27 @@ describe('AnalyticsService', () => {
 
       expect(result.conversations).toEqual(convStats);
       expect(result.messages).toEqual(msgStats);
-      // Both are called in parallel via Promise.all
       expect(mockConversationService.getStats).toHaveBeenCalledTimes(1);
       expect(mockMessageService.getStats).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('getCampaignAnalytics', () => {
-    it('should fetch campaign analytics from API', async () => {
+    it('should fetch campaign analytics using workspace-scoped backend path', async () => {
       const stats = { totalCampaigns: 10, averageDeliveryRate: 0.95 };
       mockApi.get.mockResolvedValue(stats);
 
       const result = await analyticsService.getCampaignAnalytics();
 
-      expect(mockApi.get).toHaveBeenCalledWith('/analytics/campaigns');
+      expect(mockApi.get).toHaveBeenCalledWith('/workspaces/ws-fixed/analytics/campaigns');
       expect(result).toEqual(stats);
+    });
+
+    it('uses tenant-first path when on tenant subdomain', async () => {
+      mockShouldUseTenantScopedApi.mockImplementation(() => true);
+      mockApi.get.mockResolvedValue({ totalCampaigns: 1 });
+      await analyticsService.getCampaignAnalytics();
+      expect(mockApi.get).toHaveBeenCalledWith('/tenant/analytics/campaigns');
     });
   });
 
@@ -61,7 +77,7 @@ describe('AnalyticsService', () => {
 
       await analyticsService.getContactGrowth(30);
 
-      expect(mockApi.get).toHaveBeenCalledWith('/analytics/contacts?days=30');
+      expect(mockApi.get).toHaveBeenCalledWith('/workspaces/ws-fixed/analytics/contacts?days=30');
     });
 
     it('should fetch without days param', async () => {
@@ -69,7 +85,7 @@ describe('AnalyticsService', () => {
 
       await analyticsService.getContactGrowth();
 
-      expect(mockApi.get).toHaveBeenCalledWith('/analytics/contacts');
+      expect(mockApi.get).toHaveBeenCalledWith('/workspaces/ws-fixed/analytics/contacts');
     });
   });
 
@@ -79,7 +95,7 @@ describe('AnalyticsService', () => {
 
       const result = await analyticsService.getPagePerformance();
 
-      expect(mockApi.get).toHaveBeenCalledWith('/analytics/pages');
+      expect(mockApi.get).toHaveBeenCalledWith('/workspaces/ws-fixed/analytics/pages');
       expect(result).toHaveLength(1);
     });
   });
@@ -90,7 +106,7 @@ describe('AnalyticsService', () => {
 
       const result = await analyticsService.getEngagementMetrics();
 
-      expect(mockApi.get).toHaveBeenCalledWith('/analytics/engagement');
+      expect(mockApi.get).toHaveBeenCalledWith('/workspaces/ws-fixed/analytics/engagement');
       expect(result.messagesPerContact).toBe(5);
     });
   });

@@ -14,6 +14,7 @@ import { MessageWorkerService } from './message-worker.service';
 import { TemplatesService } from './templates.service';
 import { ComplianceService } from './compliance.service';
 import { SponsoredMessageService } from './sponsored-message.service';
+import { TenantQuotaService } from '../../common/tenant/tenant-quota.service';
 
 @Module({
   imports: [PrismaModule, ContactsModule, FacebookModule, RedisModule],
@@ -26,6 +27,7 @@ import { SponsoredMessageService } from './sponsored-message.service';
     RateLimitService,
     MessageQueueService,
     MessageWorkerService,
+    TenantQuotaService,
     TemplatesService,
     ComplianceService,
     SponsoredMessageService,
