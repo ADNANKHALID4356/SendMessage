@@ -209,8 +209,8 @@ export default function CampaignCreatePage() {
           attachmentUrl: formData.messageContent.attachmentUrl || undefined,
           attachmentType: formData.messageContent.attachmentUrl ? 'image' as const : undefined,
         },
-        bypassMethod: formData.bypassMethod !== 'NONE' ? (formData.bypassMethod as any) : undefined,
-        messageTag: formData.bypassMethod === 'MESSAGE_TAG' ? (formData.messageTag as any) : undefined,
+        bypassMethod: (formData.bypassMethod as any) !== 'NONE' ? (formData.bypassMethod as any) : undefined,
+        messageTag: formData.bypassMethod?.startsWith('MESSAGE_TAG_') ? (formData.messageTag as any) : undefined,
         scheduledAt: formData.scheduledAt,
       };
 
