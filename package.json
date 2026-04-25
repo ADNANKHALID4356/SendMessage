@@ -39,7 +39,7 @@
     "clean": "pnpm -r exec rm -rf node_modules dist .next coverage",
     "typecheck": "pnpm -r exec tsc --noEmit",
     "validate:prod": "node scripts/validate-production.js",
-    "prepare": "husky install"
+    "prepare": "node -e \"if(process.env.CI||process.env.RENDER||process.env.NODE_ENV==='production'){process.exit(0)}; try{require('child_process').execSync('husky install',{stdio:'inherit'})}catch(e){process.exit(0)}\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
