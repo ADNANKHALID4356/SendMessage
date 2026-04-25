@@ -8,6 +8,11 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@messagesender/shared'],
   output: process.env.NEXT_BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+  eslint: {
+    // Vercel/CI builds can be configured to fail on ESLint warnings.
+    // We still run lint separately; don't block production builds on lint.
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       {
