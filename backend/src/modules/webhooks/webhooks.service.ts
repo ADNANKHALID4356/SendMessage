@@ -48,18 +48,16 @@ export class WebhooksService {
    */
   private initBullMQ(): void {
     try {
-      const redisHost = this.configService.get<string>('REDIS_HOST', 'localhost');
-      const redisPort = this.configService.get<number>('REDIS_PORT', 6379);
-      const redisPassword = this.configService.get<string>('REDIS_PASSWORD', '');
-      const redisDb = this.configService.get<number>('REDIS_DB', 0);
-
-      const connection = new IORedis({
-        host: redisHost,
-        port: redisPort,
-        password: redisPassword || undefined,
-        db: redisDb,
-        maxRetriesPerRequest: null,
-      });
+      const redisUrl = this.configService.get<string>('REDIS_URL');
+      const connection = redisUrl
+        ? new IORedis(redisUrl, { maxRetriesPerRequest: null })
+        : new IORedis({
+            host: this.configService.get<string>('REDIS_HOST', 'localhost'),
+            port: this.configService.get<number>('REDIS_PORT', 6379),
+            password: this.configService.get<string>('REDIS_PASSWORD', '') || undefined,
+            db: this.configService.get<number>('REDIS_DB', 0),
+            maxRetriesPerRequest: null,
+          });
 
       this.webhookQueue = new Queue('webhook-events', {
         connection,

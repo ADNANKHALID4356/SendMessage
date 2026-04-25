@@ -105,13 +105,18 @@ export class MessageQueueService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     // Create a dedicated Redis connection for BullMQ with required options
-    this.bullMqConnection = new Redis({
-      host: this.config.get('REDIS_HOST', 'localhost'),
-      port: this.config.get('REDIS_PORT', 6379),
-      password: this.config.get('REDIS_PASSWORD'),
-      db: this.config.get('REDIS_DB', 0),
-      maxRetriesPerRequest: null, // Required for BullMQ
-    });
+    const redisUrl = this.config.get<string>('REDIS_URL');
+    this.bullMqConnection = redisUrl
+      ? new Redis(redisUrl, {
+          maxRetriesPerRequest: null, // Required for BullMQ
+        })
+      : new Redis({
+          host: this.config.get('REDIS_HOST', 'localhost'),
+          port: this.config.get('REDIS_PORT', 6379),
+          password: this.config.get('REDIS_PASSWORD'),
+          db: this.config.get('REDIS_DB', 0),
+          maxRetriesPerRequest: null, // Required for BullMQ
+        });
 
     // Initialize queues
     this.messageQueue = new Queue(MessageQueueService.QUEUES.MESSAGES, {

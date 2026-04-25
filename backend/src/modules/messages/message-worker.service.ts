@@ -26,13 +26,16 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    this.connection = new Redis({
-      host: this.config.get('REDIS_HOST', 'localhost'),
-      port: this.config.get('REDIS_PORT', 6379),
-      password: this.config.get('REDIS_PASSWORD'),
-      db: this.config.get('REDIS_DB', 0),
-      maxRetriesPerRequest: null,
-    });
+    const redisUrl = this.config.get<string>('REDIS_URL');
+    this.connection = redisUrl
+      ? new Redis(redisUrl, { maxRetriesPerRequest: null })
+      : new Redis({
+          host: this.config.get('REDIS_HOST', 'localhost'),
+          port: this.config.get('REDIS_PORT', 6379),
+          password: this.config.get('REDIS_PASSWORD'),
+          db: this.config.get('REDIS_DB', 0),
+          maxRetriesPerRequest: null,
+        });
 
     // --- Message Queue Worker ---
     this.messageWorker = new Worker(
