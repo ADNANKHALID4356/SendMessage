@@ -96,7 +96,7 @@ export function CampaignCalendar() {
           id: c.id,
           name: c.name,
           status: c.status,
-          campaignType: c.type,
+          campaignType: c.campaignType,
           scheduledAt: c.scheduledAt || c.startedAt || c.createdAt,
         })),
       });

@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: messagesender-backend
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @messagesender/backend prisma:generate && pnpm --filter @messagesender/backend build
+    startCommand: pnpm --filter @messagesender/backend exec prisma migrate deploy && pnpm --filter @messagesender/backend start:prod
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      # Required at deploy time (set real values in Render dashboard)
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      # Facebook (required in prod/staging by env validation)
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: FACEBOOK_WEBHOOK_VERIFY_TOKEN
+        sync: false

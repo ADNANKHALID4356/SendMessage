@@ -55,27 +55,28 @@ import {
 import { Campaign, CampaignStatus, CampaignType } from '@/services/campaign.service';
 
 const statusIcons: Record<CampaignStatus, React.ComponentType<{ className?: string }>> = {
-  draft: AlertCircle,
-  scheduled: Clock,
-  running: Play,
-  paused: Pause,
-  completed: CheckCircle2,
-  failed: XCircle,
+  DRAFT: AlertCircle,
+  SCHEDULED: Clock,
+  RUNNING: Play,
+  PAUSED: Pause,
+  COMPLETED: CheckCircle2,
+  FAILED: XCircle,
 };
 
 const statusColors: Record<string, string> = {
-  draft: 'text-gray-500 bg-gray-100 dark:bg-gray-800',
-  scheduled: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
-  running: 'text-green-500 bg-green-100 dark:bg-green-900/30',
-  paused: 'text-amber-500 bg-amber-100 dark:bg-amber-900/30',
-  completed: 'text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30',
-  failed: 'text-red-500 bg-red-100 dark:bg-red-900/30',
+  DRAFT: 'text-gray-500 bg-gray-100 dark:bg-gray-800',
+  SCHEDULED: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
+  RUNNING: 'text-green-500 bg-green-100 dark:bg-green-900/30',
+  PAUSED: 'text-amber-500 bg-amber-100 dark:bg-amber-900/30',
+  COMPLETED: 'text-emerald-500 bg-emerald-100 dark:bg-emerald-900/30',
+  FAILED: 'text-red-500 bg-red-100 dark:bg-red-900/30',
 };
 
 const typeColors: Record<string, string> = {
-  broadcast: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  otn: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  recurring: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  ONE_TIME: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  SCHEDULED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  RECURRING: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  DRIP: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
 };
 
 export default function CampaignsPage() {
@@ -237,7 +238,7 @@ export default function CampaignsPage() {
           />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {['all', 'DRAFT', 'SCHEDULED', 'RUNNING', 'PAUSED', 'completed'].map((status) => (
+          {['all', 'DRAFT', 'SCHEDULED', 'RUNNING', 'PAUSED', 'COMPLETED'].map((status) => (
             <Button
               key={status}
               size="sm"
@@ -278,7 +279,7 @@ export default function CampaignsPage() {
                       ? ((campaign.deliveredCount / campaign.sentCount) * 100).toFixed(1)
                       : '0';
                     const readRate = campaign.deliveredCount > 0
-                      ? ((campaign.readCount / campaign.deliveredCount) * 100).toFixed(1)
+                      ? ((campaign.openedCount / campaign.deliveredCount) * 100).toFixed(1)
                       : '0';
 
                     const isLaunching = launchCampaign.isPending && launchCampaign.variables === campaign.id;
@@ -319,7 +320,7 @@ export default function CampaignsPage() {
                         <td className="p-3">
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{campaign.segment?.name || 'All Contacts'}</span>
+                            <span className="text-sm">All Contacts</span>
                             <span className="text-xs text-muted-foreground">
                               ({formatNumber(campaign.totalRecipients)})
                             </span>

@@ -294,6 +294,7 @@ export const messageService = {
   },
 };
 
-export default { conversationService, messageService };
+const services = { conversationService, messageService };
+export default services;
 
 
