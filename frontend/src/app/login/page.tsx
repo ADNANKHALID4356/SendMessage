@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -50,6 +50,12 @@ function LoginForm() {
 
   const rememberMe = watch('rememberMe');
 
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') return;
+    // Wake cold backend + warm Next.js rewrite path before the user submits credentials.
+    void fetch('/api/v1/health', { cache: 'no-store' }).catch(() => undefined);
+  }, []);
+
   const onSubmit = async (data: LoginFormData) => {
     try {
       await login(data, isAdminLogin);
@@ -64,6 +70,20 @@ function LoginForm() {
 
       const status = error?.status;
       const message = error?.message || '';
+      const isTimeout =
+        status === 408 ||
+        message.toLowerCase().includes('timeout') ||
+        message.includes('ECONNABORTED');
+
+      if (isTimeout) {
+        toast({
+          title: 'Server is slow to respond',
+          description:
+            'Your API may be waking from sleep (common on free hosting). Wait a moment and try again, or upgrade the backend so it stays warm.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       if (
         !isAdminLogin &&

@@ -32,6 +32,18 @@ const resolveApiBaseUrl = (): string => {
   return 'http://localhost:4000/api/v1';
 };
 
+const resolveRequestTimeoutMs = (): number => {
+  const fromEnv = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT_MS || '', 10);
+  if (!Number.isNaN(fromEnv) && fromEnv > 0) {
+    return fromEnv;
+  }
+  // Hosted backends (e.g. Render free tier cold starts + Next.js rewrites) can exceed 10s occasionally.
+  if (process.env.NODE_ENV === 'production') {
+    return 60000;
+  }
+  return 10000;
+};
+
 // Specifically handle the case where the user forgets to append /api/v1 to the NEXT_PUBLIC_API_URL
 // Ignore if it already ends with api/v1 or similar
 const API_BASE_URL = resolveApiBaseUrl();
@@ -98,7 +110,7 @@ const createApiClient = (): AxiosInstance => {
       'Content-Type': 'application/json',
       'ngrok-skip-browser-warning': 'true',
     },
-    timeout: 10000,
+    timeout: resolveRequestTimeoutMs(),
   });
 
   // Request interceptor - add auth token + workspace header

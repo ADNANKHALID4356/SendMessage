@@ -85,9 +85,11 @@ export const useAuthStore = create<AuthState>()(
         }
 
         try {
-          // Use AbortController to timeout after 5s so the app doesn't hang
+          // Use AbortController to avoid hanging forever on a wedged API.
+          // Production APIs can be slow to wake (cold starts), so allow more time than dev.
+          const profileInitTimeoutMs = process.env.NODE_ENV === 'production' ? 20000 : 5000;
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const timeoutId = setTimeout(() => controller.abort(), profileInitTimeoutMs);
           const user = await authService.getProfile(controller.signal);
           clearTimeout(timeoutId);
           const currentWorkspaceId = get().currentWorkspaceId;
