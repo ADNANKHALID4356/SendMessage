@@ -281,9 +281,23 @@ function LoginForm() {
         </Card>
 
         {/* Footer */}
-        <p className="mt-8 text-center text-sm text-muted-foreground">
-          © 2026 MessageSender. Professional Facebook Messaging Platform.
-        </p>
+        <div className="mt-8 space-y-2 text-center text-sm text-muted-foreground">
+          <p>© 2026 MessageSender. Professional Facebook Messaging Platform.</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs">
+            <Link className="hover:underline" href="/privacy">
+              Privacy
+            </Link>
+            <Link className="hover:underline" href="/terms">
+              Terms
+            </Link>
+            <Link className="hover:underline" href="/data-deletion">
+              Data deletion
+            </Link>
+            <Link className="hover:underline" href="/contact">
+              Contact
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
